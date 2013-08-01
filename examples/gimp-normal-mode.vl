@@ -1,0 +1,21 @@
+float4 gimp_normal_mode (float4 in, float4 aux, float opacity, float mask)
+{
+  float4 one = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
+  opacity = opacity * mask;
+
+  float4 alpha = aux.s3333;
+  alpha = alpha * (float4)(opacity, opacity, opacity, opacity);
+
+  if (alpha.s0 == 0.0f)
+    {
+      return in;
+    }
+  
+  float4 dst_alpha = in.s3333;
+  float4 a_term = dst_alpha * (one - alpha);
+  float4 out_pixel = aux * alpha + in * a_term;
+  float4 out_alpha = alpha + a_term;
+         out_pixel = out_pixel / out_alpha;
+         out_pixel = shuffle2(out_pixel, out_alpha, (int4)(0, 1, 2, 7));
+  return out_pixel;
+}

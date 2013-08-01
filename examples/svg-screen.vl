@@ -1,0 +1,23 @@
+/* SVG Screen
+ * http://www.w3.org/TR/2004/WD-SVG12-20041027/rendering.html#comp-op-prop
+ */
+
+float4 process(float4 in, float4 aux)
+{
+  /*
+  float4 one = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
+
+  float4 Sca = aux;
+  float4 Dca = in;
+  float4 Sa = aux.s3333;
+  float4 Da = in.s3333;
+
+  float4 out_alpha = Sa + Da - Sa * Da;
+  //float4 out_color = (Sca * Da + Dca * Sa - Sca * Dca) + Sca * (one - Da) + Dca * (one - Sa);
+
+  float4 out = shuffle2 (out_color, out_alpha, (int4)(0, 1, 2, 7));
+  return out;
+  */
+
+  return aux + in - aux * in;
+}

@@ -1,0 +1,6 @@
+float4 process(float4 in, float4 aux)
+{
+  float4 one = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
+  float4 aaaa = aux.s3333;
+  return aux + in * (one - aaaa);
+}

@@ -1,0 +1,10 @@
+import os, sys
+
+Import("env", "llvm_env")
+
+nanjit_parse_env = env.Clone()
+nanjit_parse_env.Append(LIBS = ["nanjit"])
+nanjit_parse_env.Append(LIBPATH = [".."])
+nanjit_parse_env.Append(CPPPATH = [".."])
+
+nanjit_parse_env.Program("nanjit-parse", ["nanjit-parse.cpp"])

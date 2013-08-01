@@ -1,0 +1,34 @@
+/* SVG Color Dodge
+ * http://www.w3.org/TR/2004/WD-SVG12-20041027/rendering.html#comp-op-prop
+ */
+
+float4 process(float4 in, float4 aux)
+{
+  float4 one = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
+
+  if (aux.s3 == 0.0f)
+    {
+      return in;
+    }
+
+  float4 Sca = aux;
+  float4 Dca = in;
+  float4 Sa = aux.s3333;
+  float4 Da = in.s3333;
+
+  float4 out_alpha = Sa + Da - Sa * Da;
+  /*
+  float4 out_path_if = Sa * Da + Sca * (one - Da) + Dca * (one - Sa);
+  float4 out_path_else = Dca * Sa / (one - Sca / Sa) + Sca * (one - Da) + Dca * (one - Sa);
+  */
+
+  float4 common_path = Sca * (one - Da) + Dca * (one - Sa);
+  float4 out_path_if = Sa * Da + common_path;
+  float4 out_path_else = Dca * Sa / (one - Sca / Sa) + common_path;
+
+  bool4  select_mask = Sca * Da + Dca * Sa >= Sa * Da;
+  float4 blended_paths = select (out_path_if, out_path_else, select_mask);
+         blended_paths = shuffle2 (blended_paths, out_alpha, (int4)(0, 1, 2, 7));
+
+  return blended_paths;
+}

@@ -1,0 +1,11 @@
+import os, sys
+
+Import("env", "llvm_env")
+
+internal_test_env = llvm_env.Clone()
+internal_test_env.Append(CPPPATH = [".."])
+
+# Static objects for nanjit sources are built in the parent Enviroment so all tests
+# that need them can link the same version.
+typeinfo_obj = llvm_env.Object(os.path.join("..", "typeinfo.cpp"))
+typeinfo_app = internal_test_env.Program("typeparse", ["typeparse.cpp", typeinfo_obj])
