@@ -126,7 +126,6 @@ bison_outputs = parser_env.CXXFile("parser.tab.cpp", "parser.yy", YACCFLAGS="-d"
 Clean(bison_outputs, "location.hh")
 Clean(bison_outputs, "position.hh")
 Clean(bison_outputs, "stack.hh")
-parser_env.Append(LIBS = ["l"]) # Link to flex
 
 llvm_env = parser_env.Clone()
 
