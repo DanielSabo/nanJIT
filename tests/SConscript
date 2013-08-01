@@ -9,3 +9,11 @@ internal_test_env.Append(CPPPATH = [".."])
 # that need them can link the same version.
 typeinfo_obj = llvm_env.Object(os.path.join("..", "typeinfo.cpp"))
 typeinfo_app = internal_test_env.Program("typeparse", ["typeparse.cpp", typeinfo_obj])
+
+external_test_env = env.Clone()
+external_test_env.Append(LIBS = ["nanjit"])
+external_test_env.Append(LIBPATH = [".."])
+external_test_env.Append(CPPPATH = [".."])
+
+external_test_env.Program("argtypes", ["argtypes.cpp"])
+external_test_env.Program("argalias", ["argalias.cpp"])

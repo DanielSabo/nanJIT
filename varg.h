@@ -32,21 +32,24 @@ private:
   ArgAggEnum aggregation;
   nanjit::TypeInfo type;
   bool aligned;
-  std::string name;
+  int alias_index;
 public:
 
   GeneratorArgumentInfo();
   GeneratorArgumentInfo(std::string str);
   void setAligned(bool is_aligned);
   void setAggregation(ArgAggEnum agg);
+  void setAlias(int a);
   void parse(std::string str);
-  std::string toStr();
+  std::string toStr() const;
 
-  bool getAligned();
-  ArgAggEnum getAggregation();
-  nanjit::TypeInfo getType();
-  llvm::Type *getLLVMBaseType();
-  llvm::Type *getLLVMType();
+  bool getAligned() const;
+  ArgAggEnum getAggregation() const;
+  bool getIsAlias() const;
+  int getAlias() const;
+  nanjit::TypeInfo getType() const;
+  llvm::Type *getLLVMBaseType() const;
+  llvm::Type *getLLVMType() const;
 };
 
 llvm::Function *llvm_def_for(Module *module, const std::string &function_name, std::list<GeneratorArgumentInfo> &target_arg_list);
