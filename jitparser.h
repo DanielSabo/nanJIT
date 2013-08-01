@@ -1,7 +1,7 @@
 #ifndef __JITPARSER_H__
 #define __JITPARSER_H__
 #include <istream>
-#include "ast.hpp"
+#include "ast.h"
 
 namespace nanjit {
   ModuleAST *parse(std::istream &source_code_stream);

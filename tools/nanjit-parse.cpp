@@ -6,7 +6,7 @@
 #include <stdint.h>
 using namespace std;
 
-#include "jitmodule.hpp"
+#include "jitmodule.h"
 
 typedef void (*PixelBlendFunction)(float *in, float *aux, float *out);
 typedef void (*PixelBlendFunctionIter)(float *in, float *aux, float *out, uint32_t count);

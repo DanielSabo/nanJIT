@@ -22,7 +22,7 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Transforms/Scalar.h"
 
-#include "util.hpp"
+#include "util.h"
 
 using namespace llvm;
 

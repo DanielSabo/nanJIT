@@ -15,7 +15,7 @@ namespace nanjit {
   class Scanner;
 }
 
-#include "ast.hpp"
+#include "ast.h"
 /* -- End needed by parster.tab.hpp -- */
 
 #include "parser.tab.hpp"

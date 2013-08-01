@@ -36,7 +36,7 @@ using namespace std;
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "typeinfo.hpp"
+#include "typeinfo.h"
 
 int main(int argc, char **argv)
 {

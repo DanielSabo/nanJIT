@@ -33,9 +33,9 @@
 using namespace llvm;
 using namespace std;
 
-#include "typeinfo.hpp"
-#include "ast.hpp"
-#include "ast-internal.hpp"
+#include "typeinfo.h"
+#include "ast.h"
+#include "ast-internal.h"
 using namespace nanjit;
 
 /* Base types, from lowest to highest precedence */

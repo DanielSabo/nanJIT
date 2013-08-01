@@ -1,7 +1,7 @@
 #ifndef __VARG_HPP__
 #define __VARG_HPP__
 
-#include "typeinfo.hpp"
+#include "typeinfo.h"
 
 namespace llvm
 {

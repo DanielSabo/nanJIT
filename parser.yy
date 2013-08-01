@@ -14,7 +14,7 @@ namespace nanjit {
   class Scanner;
 }
 
-#include "ast.hpp"
+#include "ast.h"
 %}
 
 // Bison fundamentally works by asking flex to get the next token, which it

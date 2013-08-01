@@ -36,7 +36,7 @@ using namespace llvm;
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "varg.hpp"
+#include "varg.h"
 using namespace nanjit;
 
 GeneratorArgumentInfo::GeneratorArgumentInfo()

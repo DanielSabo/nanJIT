@@ -13,7 +13,7 @@
 #include "llvm/Module.h"
 #endif
 
-#include "typeinfo.hpp"
+#include "typeinfo.h"
 
 #include <cstdio>
 #include <cstdlib>

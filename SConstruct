@@ -156,7 +156,7 @@ SConscript(["tools/SConscript"], exports=["env", "llvm_env"])
 # Install targets
 install_prefix = env["PREFIX"]
 
-install_headers = ["jitmodule.hpp"]
+install_headers = ["jitmodule.h"]
 
 install_env = env.Clone()
 install_lib = install_env.Install(os.path.join(install_prefix, "lib"), nanjit_lib)

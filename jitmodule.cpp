@@ -40,12 +40,12 @@ using namespace llvm;
 #include <sstream>
 using namespace std;
  
-#include "ast.hpp"
-#include "util.hpp"
-#include "varg.hpp"
+#include "ast.h"
+#include "util.h"
+#include "varg.h"
 
-#include "jitmodule.hpp"
-#include "jitparser.hpp"
+#include "jitmodule.h"
+#include "jitparser.h"
 
 JitModule *jit_module_for_src(const char *src, unsigned int flags)
 {
