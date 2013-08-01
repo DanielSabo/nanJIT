@@ -21,7 +21,7 @@ Libs: -L%(libdir)s -l%(project_name)s"""
     "version":version_string,
   }
 
-  print pc_str,
+  print (pc_str)
 
 if len(sys.argv) > 1:
   install_prefix = sys.argv[1]
