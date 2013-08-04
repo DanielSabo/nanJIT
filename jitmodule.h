@@ -16,7 +16,7 @@ extern "C" {
     JIT_MODULE_DEBUG_LLVM = 0x0200
   } JitModuleFlags;
 
-  JitModule *jit_module_for_src(const char *src, unsigned int flags);
+  JitModule *jit_module_for_src(const char *src, unsigned int module_flags);
   void *jit_module_get_iteration(JitModule *jm, const char *function_name, const char *return_type, ...);
   unsigned int jit_module_is_fallback_function(JitModule *jm, void *func);
   void jit_module_destroy(JitModule *jm);
@@ -60,11 +60,12 @@ class JitModule
 {
   llvm::Module *module;
   JitModuleState *internal;
+  unsigned int flags;
 
   std::map<std::string, JitModuleIterationData> liveFunctions;
 
 public:
-  JitModule(const char *sourcecode, unsigned int flags);
+  JitModule(const char *sourcecode, unsigned int module_flags);
   void *getIteration(const char *function_name, const char *return_type, ...) __attribute__ ((sentinel));
   void *getIteration(const char *function_name, const std::list<std::string> &argstrs);
   bool isFallbackFunction(void *function);

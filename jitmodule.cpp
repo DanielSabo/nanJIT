@@ -158,8 +158,9 @@ JitModuleState::~JitModuleState()
     delete target_machine;
 }
 
-JitModule::JitModule(const char *sourcecode, unsigned int flags)
+JitModule::JitModule(const char *sourcecode, unsigned int module_flags)
 {
+  flags = module_flags;
   module = new Module("nanJIT Dummy Module", getGlobalContext());
   internal = new JitModuleState();
 
@@ -276,6 +277,9 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
     cout << "Will generate " << function_description.str() << endl;
 
     Function *iter_func = llvm_def_for(cloned_module, std::string(function_name), arginfos);
+
+    if (flags & JIT_MODULE_DEBUG_LLVM)
+      cloned_module->dump();
 
     internal->optimizeModule(cloned_module);
 
