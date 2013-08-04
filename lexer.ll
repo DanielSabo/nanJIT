@@ -13,6 +13,10 @@ typedef nanjit::BisonParser::token token;
   yylloc->begin.line = yylineno;\
   yylloc->end.line = yylineno;\
 }
+
+/* Override he default yylex name with our namespaced version */
+#undef YY_DECL
+#define YY_DECL int nanjit::Scanner::yylex()
 %}
 
 %option yyclass="Scanner"

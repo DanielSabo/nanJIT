@@ -35,6 +35,14 @@ AddOption("--with-llvm-config",
           metavar="PATH",
           help="path to the llvm-config binary")
 
+AddOption("--with-bison",
+          dest="bison",
+          type="string",
+          nargs=1,
+          action="store",
+          metavar="PATH",
+          help="path to the bison binary")
+
 AddOption("--llvm-shared",
           dest="llvm_shared",
           help="link to LLVM dynamically",
@@ -57,6 +65,7 @@ variables.AddVariables(
     ("LLVM_CONFIG", "llvm-config binary to use", "llvm-config"),
     (BoolVariable("LLVM_SHARED", "link to LLVM dynamically", False)),
     ("CCFLAGS", "C/C++ compiler arguments", ["-g", "-O2"]),
+    ("YACC", "bison binary to use", "bison"),
   )
 
 # Load default values into env
@@ -71,6 +80,9 @@ if GetOption("use_clang") is not None:
 
 if GetOption("llvm_config") is not None:
   env["LLVM_CONFIG"] = GetOption("llvm_config")
+
+if GetOption("bison") is not None:
+  env["YACC"] = GetOption("bison")
 
 if GetOption("llvm_shared") is not None:
   if GetOption("llvm_shared"):

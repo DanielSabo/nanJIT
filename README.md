@@ -68,4 +68,6 @@ passed by reference.
 Requirements
 ============
    - SCons (2.1.0 or newer recommended)
+   - Flex (2.5.35)
+   - Bison (2.5 recommended, up to 3.0 should also work)
    - LLVM development libraries (version 3.2 or 3.3)

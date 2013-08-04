@@ -6,18 +6,6 @@
 #include <FlexLexer.h>
 #endif
 
-/* Override he default yylex name with our namespaced version */
-#undef YY_DECL
-#define YY_DECL int nanjit::Scanner::yylex()
-
-/* -- Needed by parster.tab.hpp -- */
-namespace nanjit {
-  class Scanner;
-}
-
-#include "ast.h"
-/* -- End needed by parster.tab.hpp -- */
-
 #include "parser.tab.hpp"
 
 namespace nanjit {
@@ -30,10 +18,10 @@ namespace nanjit {
 
     /* Replace yylex with a version bison can use */
     int yylex(nanjit::BisonParser::semantic_type *lval,
-              nanjit::BisonParser::location_type &loc)
+              nanjit::BisonParser::location_type *loc)
     {
       yylval = lval;
-      yylloc = &loc;
+      yylloc = loc;
       return yylex();
       yylval = NULL;
       yylloc = NULL;

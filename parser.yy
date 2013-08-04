@@ -1,27 +1,27 @@
 %skeleton "lalr1.cc"
-%require  "2.3"
+%require  "2.5"
 %defines
-%name-prefix="nanjit"
-%define "parser_class_name" "BisonParser"
+%name-prefix "nanjit"
+%define parser_class_name "BisonParser"
+%locations
 
-%{
-#include <cstdio>
-#include <iostream>
-#include <exception>
-using namespace std;
-
+%code requires {
 namespace nanjit {
   class Scanner;
 }
 
 #include "ast.h"
-%}
+}
 
-// Bison fundamentally works by asking flex to get the next token, which it
-// returns as an object of type "yystype".  But tokens could be of any
-// arbitrary data type!  So we deal with that in Bison by defining a C union
-// holding each of the types of tokens that Flex could return, and have Bison
-// use that union instead of "int" for the definition of "yystype":
+%code {
+#include <cstdio>
+#include <iostream>
+#include <exception>
+using namespace std;
+}
+
+// Define the bison union, this must be able to contain all types that can
+// be output by Flex or returned by a Bison rule.
 %union {
   char *sval;
   ExprAST *expr_ast;
@@ -34,15 +34,16 @@ namespace nanjit {
   CallArgListAST *call_arg_list;
 }
 
-%{
+%code {
   #include "jitlexer.h"
   static int yylex(nanjit::BisonParser::semantic_type *yylval,
-                   nanjit::BisonParser::location_type &yylloc,
+                   nanjit::BisonParser::location_type *location,
                    nanjit::Scanner &scanner);
-%}
+}
 
-// define the "terminal symbol" token types I'm going to use (in CAPS
-// by convention), and associate each with a field of the union:
+
+// Define the "terminal symbol" tokens, also associate the token
+// with a field in the union if it returns additional data.
 %token <sval> INT
 %token <sval> FLOAT
 %token <sval> DOUBLE
@@ -90,7 +91,6 @@ namespace nanjit {
 %destructor { delete $$; } identifier type_name call_arguments
 
 %parse-param { ModuleAST **module }
-%lex-param   { const nanjit::BisonParser::location_type &yylloc}
 %lex-param   { Scanner &scanner}
 %parse-param { Scanner &scanner}
 
@@ -176,8 +176,8 @@ void nanjit::BisonParser::error(const nanjit::BisonParser::location_type &l,
 
 #include "jitlexer.h"
 static int yylex(nanjit::BisonParser::semantic_type *yylval,
-                 nanjit::BisonParser::location_type &yylloc,
+                 nanjit::BisonParser::location_type *location,
                  nanjit::Scanner &scanner)
 {
-   return( scanner.yylex(yylval, yylloc) );
+   return( scanner.yylex(yylval, location) );
 }
