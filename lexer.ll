@@ -54,7 +54,7 @@ typedef nanjit::BisonParser::token token;
 "short"[234]?        { yylval->sval = strdup(yytext); return token::TYPENAME; };
 "ushort"[234]?       { yylval->sval = strdup(yytext); return token::TYPENAME; };
 "bool"[234]?         { yylval->sval = strdup(yytext); return token::TYPENAME; };
-[A-Za-z][A-Za-z0-9_]* { yylval->sval = strdup(yytext); return token::IDENTIFIER; };
+[A-Za-z_][A-Za-z0-9_]* { yylval->sval = strdup(yytext); return token::IDENTIFIER; };
 [0-9]+"."?[0-9]*[fF] { yylval->sval = strdup(yytext); return token::FLOAT; };
 [0-9]+"."[0-9]*      { yylval->sval = strdup(yytext); return token::DOUBLE; };
 [0-9]+               { yylval->sval = strdup(yytext); return token::INT; };
