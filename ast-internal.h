@@ -3,7 +3,8 @@ class ScopeContext {
   std::map<std::string, nanjit::TypeInfo> Types;
   nanjit::TypeInfo ReturnType;
 public:
-  IRBuilder<> *Builder;
+  llvm::IRBuilder<> *Builder;
+  llvm::Module *Module;
 
   ScopeContext() : ReturnType("void") {};
 
@@ -18,3 +19,4 @@ public:
 
 llvm::Type *typeinfo_get_llvm_type(nanjit::TypeInfo type);
 void cast_value(ScopeContext *scope, nanjit::TypeInfo to_type, nanjit::TypeInfo from_type, Value **value);
+Function *define_llvm_intrinisic(ScopeContext *scope, string name, nanjit::TypeInfo type);

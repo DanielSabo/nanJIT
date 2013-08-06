@@ -124,6 +124,34 @@ void cast_value(ScopeContext *scope, nanjit::TypeInfo to_type, nanjit::TypeInfo 
     throw SyntaxErrorException("Could not convert " + from_type.toStr() + " to " + to_type.toStr());
 }
 
+Function *define_llvm_intrinisic(ScopeContext *scope, string name, TypeInfo type)
+{
+  if (!type.isFloatType())
+    throw SyntaxErrorException("Intrinsic \"" + name + "\" type must be a float");
+
+  std::stringstream full_name;
+  if (type.getWidth() != 1)
+    full_name << name << ".v" << type.getWidth() << "f32";
+  else
+    full_name << name << ".f32";
+
+  Function *func = scope->Module->getFunction(full_name.str());
+
+  if (!func)
+  {
+    Type *result_type = type.getLLVMType();
+    vector<Type *> arg_types;
+
+    arg_types.push_back(result_type);
+
+    /* create the function type */
+    FunctionType *func_type = FunctionType::get(result_type, arg_types, false);
+    func = Function::Create(func_type, Function::ExternalLinkage, full_name.str(), scope->Module);
+  }
+
+  return func;
+}
+
 void ScopeContext::setVariable(std::string name, llvm::Value *value)
 {
   std::map<std::string, llvm::Value *>::iterator it;
@@ -652,6 +680,34 @@ Value *CallAST::codegen(ScopeContext *scope)
       value = Builder->CreateSelect(mask, value, max);
       return value;
     }
+  else if (std::string("sqrt") == Target->getName())
+    {
+      const int num_args = 1;
+      if (args.size() != num_args)
+        {
+          std::stringstream error_string;
+          error_string << "Called \"" << Target->getName() << "\" with ";
+          error_string << args.size() << " arguments, expected " << num_args;
+        throw SyntaxErrorException(error_string.str());
+        }
+
+      /* FIXME: Validate arguments */
+      IRBuilder<> *Builder = scope->Builder;
+
+      Value *arg_value   = args[0]->codegen(scope);
+      TypeInfo arg_type  = args[0]->getResultType(scope);
+      TypeInfo call_type = TypeInfo(TypeInfo::TYPE_FLOAT, arg_type.getWidth());
+      cast_value(scope, call_type, arg_type, &arg_value);
+
+      vector<Value *>call_parameters;
+      call_parameters.push_back(arg_value);
+
+      Function *target_func = define_llvm_intrinisic(scope, "llvm.sqrt", call_type);
+
+      Value *call_result = Builder->CreateCall(target_func, call_parameters);
+
+      return call_result;
+    }
 
   throw SyntaxErrorException("Call \"" + Target->getName() + "\" not implemented");
 }
@@ -669,6 +725,11 @@ nanjit::TypeInfo CallAST::getResultType(ScopeContext *scope)
   else if (std::string("clamp") == Target->getName())
     {
       return ArgList->getArgsList()[0]->getResultType(scope);
+    }
+  else if (std::string("sqrt") == Target->getName())
+    {
+      TypeInfo arg_type = ArgList->getArgsList()[0]->getResultType(scope);
+      return TypeInfo(TypeInfo::TYPE_FLOAT, arg_type.getWidth());
     }
   throw SyntaxErrorException("Call \"" + Target->getName() + "\" result type not implemented");
 }
@@ -901,6 +962,7 @@ Value *FunctionAST::codegen(llvm::Module *module)
   IRBuilder<> Builder(getGlobalContext());
   ScopeContext scope = ScopeContext();
   scope.Builder = &Builder;
+  scope.Module = module;
 
   scope.setReturnType(ReturnType->getName());
 
