@@ -156,7 +156,18 @@ else:
 llvm_env.ParseConfig(env["LLVM_CONFIG"] + " --ldflags")
 
 parser_objects = env.SharedObject("lexer.cpp") + env.SharedObject("parser.tab.cpp")
-nanjit_lib_inputs = ["util.cpp", "ast.cpp", "jitparser.cpp", "jitmodule.cpp", "typeinfo.cpp", "varg.cpp"] + parser_objects
+
+nanjit_lib_sources = [
+  "util.cpp",
+  "ast.cpp",
+  "jitparser.cpp",
+  "jitmodule.cpp",
+  "typeinfo.cpp",
+  "varg.cpp",
+  "varg-arginfo.cpp",
+]
+
+nanjit_lib_inputs = nanjit_lib_sources + parser_objects
 nanjit_lib = llvm_env.SharedLibrary("nanjit", nanjit_lib_inputs)
 
 env.Command("nanjit.pc", "nanjit.pc.py", "python $SOURCE $PREFIX > $TARGET")

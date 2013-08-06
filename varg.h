@@ -52,7 +52,12 @@ public:
   llvm::Type *getLLVMType() const;
 };
 
+std::string llvm_type_to_string(const Type *type);
+
 llvm::Function *llvm_def_for(Module *module, const std::string &function_name, std::list<GeneratorArgumentInfo> &target_arg_list);
 llvm::Function *llvm_void_def_for(Module *module, const std::string &function_name, std::list<GeneratorArgumentInfo> &target_arg_list);
+
+llvm::Function *llvm_def_for_range(Module *module, const std::string &function_name, std::list<GeneratorArgumentInfo> &target_arg_list);
+llvm::Function *llvm_void_def_for_range(Module *module, const std::string &function_name, std::list<GeneratorArgumentInfo> &target_arg_list);
 
 #endif /* __VARG_HPP__ */

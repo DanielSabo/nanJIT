@@ -80,6 +80,26 @@ void *jit_module_get_iteration(JitModule *jm, const char *function_name, const c
   return jm->getIteration(function_name, argstrs);
 }
 
+void *jit_module_get_range_iteration(JitModule *jm, const char *function_name, const char *return_type, ...)
+{
+  va_list vargs;
+  va_start(vargs, return_type);
+
+  std::list<std::string> argstrs;
+
+  argstrs.push_back(std::string(return_type));
+
+  const char *arg_type = va_arg(vargs, char *);
+  while (arg_type)
+  {
+    argstrs.push_back(std::string(arg_type));
+    arg_type = va_arg(vargs, char *);
+  }
+  va_end(vargs);
+
+  return jm->getRangeIteration(function_name, argstrs);
+}
+
 unsigned int jit_module_is_fallback_function(JitModule *jm, void *func)
 {
   return jm->isFallbackFunction(func);
@@ -305,6 +325,123 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
     printf("Error in function_for(%s): %s\n", function_name, e.what());
 
     Function *iter_func = llvm_void_def_for(cloned_module, std::string(function_name), arginfos);
+
+    internal->optimizeModule(cloned_module);
+
+    JitModuleIterationData iter_data;
+
+    iter_data.module = cloned_module;
+    iter_data.function = iter_func;
+    iter_data.voidFunction = true;
+
+    {
+      MachineCodeInfo machine_code_info;
+      internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
+      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
+    }
+
+    liveFunctions[function_description.str()] = iter_data;
+
+    return iter_data.compiledFunciton;
+  }
+}
+
+void *JitModule::getRangeIteration(const char *function_name, const char *return_type, ...)
+{
+  va_list vargs;
+  va_start(vargs, return_type);
+
+  std::list<std::string> argstrs;
+
+  argstrs.push_back(std::string(return_type));
+
+  const char *arg_type = va_arg(vargs, char *);
+  while (arg_type)
+  {
+    argstrs.push_back(std::string(arg_type));
+    arg_type = va_arg(vargs, char *);
+  }
+  va_end(vargs);
+
+  return getRangeIteration(function_name, argstrs);
+}
+
+void *JitModule::getRangeIteration(const char *function_name, const std::list<std::string> &argstrs)
+{
+  std::list<GeneratorArgumentInfo> arginfos;
+
+  stringstream function_description;
+
+  try
+  {
+    for(std::list<std::string>::const_iterator iter = argstrs.begin(); iter != argstrs.end(); ++iter)
+    {
+      arginfos.push_back(GeneratorArgumentInfo(*iter));
+    }
+
+    {
+      std::list<GeneratorArgumentInfo>::iterator iter = arginfos.begin();
+      GeneratorArgumentInfo return_info = *iter++; /* Skip the return value when printing args */
+
+      function_description << function_name << ".range1D(";
+      while(iter != arginfos.end())
+      {
+        function_description << iter->toStr();
+
+        if (++iter != arginfos.end())
+          function_description << ", ";
+      }
+      function_description << ") -> " << return_info.toStr();
+    }
+
+    if (liveFunctions.find(function_description.str()) != liveFunctions.end())
+    {
+      cout << "Existing function for " << function_description.str() << endl;
+      return liveFunctions[function_description.str()].compiledFunciton;
+    }
+  }
+  catch (std::exception& e)
+  {
+    printf("Error in getIteration(%s): %s\n", function_name, e.what());
+    return NULL;
+  }
+
+  Module *cloned_module = CloneModule(module);
+
+  try
+  {
+    cout << "Will generate " << function_description.str() << endl;
+
+    Function *iter_func = llvm_def_for_range(cloned_module, std::string(function_name), arginfos);
+
+    if (flags & JIT_MODULE_DEBUG_LLVM)
+      cloned_module->dump();
+
+    internal->optimizeModule(cloned_module);
+
+    JitModuleIterationData iter_data;
+
+    iter_data.module = cloned_module;
+    iter_data.function = iter_func;
+    iter_data.voidFunction = false;
+
+    {
+      MachineCodeInfo machine_code_info;
+      internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
+      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
+    }
+
+    liveFunctions[function_description.str()] = iter_data;
+
+    return iter_data.compiledFunciton;
+  }
+  catch (std::exception& e)
+  {
+    printf("Error in function_for(%s): %s\n", function_name, e.what());
+
+    Function *iter_func = llvm_void_def_for_range(cloned_module, std::string(function_name), arginfos);
 
     internal->optimizeModule(cloned_module);
 

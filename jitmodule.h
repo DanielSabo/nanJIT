@@ -18,6 +18,7 @@ extern "C" {
 
   JitModule *jit_module_for_src(const char *src, unsigned int module_flags);
   void *jit_module_get_iteration(JitModule *jm, const char *function_name, const char *return_type, ...);
+  void *jit_module_get_range_iteration(JitModule *jm, const char *function_name, const char *return_type, ...);
   unsigned int jit_module_is_fallback_function(JitModule *jm, void *func);
   void jit_module_destroy(JitModule *jm);
 #ifdef __cplusplus
@@ -68,6 +69,8 @@ public:
   JitModule(const char *sourcecode, unsigned int module_flags);
   void *getIteration(const char *function_name, const char *return_type, ...) __attribute__ ((sentinel));
   void *getIteration(const char *function_name, const std::list<std::string> &argstrs);
+  void *getRangeIteration(const char *function_name, const char *return_type, ...) __attribute__ ((sentinel));
+  void *getRangeIteration(const char *function_name, const std::list<std::string> &argstrs);
   bool isFallbackFunction(void *function);
 
   ~JitModule();

@@ -40,196 +40,6 @@ using namespace std;
 #include "varg.h"
 using namespace nanjit;
 
-GeneratorArgumentInfo::GeneratorArgumentInfo()
-{
-  aggregation = ARG_AGG_SINGLE;
-  type = TypeInfo(TypeInfo::TYPE_VOID);
-  aligned = false;
-  alias_index = -1;
-}
-
-GeneratorArgumentInfo::GeneratorArgumentInfo(string str)
-{
-  aggregation = ARG_AGG_SINGLE;
-  type = TypeInfo(TypeInfo::TYPE_VOID);
-  aligned = false;
-  alias_index = -1;
-
-  parse(str);
-}
-
-void GeneratorArgumentInfo::setAligned(bool is_aligned)
-{
-  aligned = is_aligned;
-}
-
-
-bool GeneratorArgumentInfo::getAligned() const
-{
-  return aligned;
-}
-
-void GeneratorArgumentInfo::setAlias(int a)
-{
-  alias_index = a;
-}
-
-int GeneratorArgumentInfo::getAlias() const
-{
-  return alias_index;
-}
-
-bool GeneratorArgumentInfo::getIsAlias() const
-{
-  return alias_index != -1;
-}
-
-void GeneratorArgumentInfo::setAggregation(ArgAggEnum agg)
-{
-  aggregation = agg;
-}
-
-GeneratorArgumentInfo::ArgAggEnum GeneratorArgumentInfo::getAggregation() const
-{
-  return aggregation;
-}
-
-nanjit::TypeInfo GeneratorArgumentInfo::getType() const
-{
-  return type;
-}
-
-string GeneratorArgumentInfo::toStr() const
-{
-  stringstream result;
-
-  if(aggregation == GeneratorArgumentInfo::ARG_AGG_SINGLE)
-    result << "single(";
-  else if(aggregation == GeneratorArgumentInfo::ARG_AGG_REF)
-    result << "pointer(";
-  else if(aggregation == GeneratorArgumentInfo::ARG_AGG_ARRAY)
-    result << "array(";
-
-  if (aligned)
-    result << "aligned ";
-
-  if (alias_index !=  -1)
-    result << "alias(" << alias_index << ") ";
-
-  if (type.getBaseType() == TypeInfo::TYPE_FLOAT)
-    result << "float";
-  else if (type.getBaseType() == TypeInfo::TYPE_INT)
-    result << "int";
-  else if (type.getBaseType() == TypeInfo::TYPE_UINT)
-    result << "uint";
-  else if (type.getBaseType() == TypeInfo::TYPE_SHORT)
-    result << "short";
-  else if (type.getBaseType() == TypeInfo::TYPE_USHORT)
-    result << "ushort";
-
-  if (type.getWidth() > 1)
-    result << type.getWidth();
-  
-  result << ")";
-
-  return result.str();
-}
-
-llvm::Type *GeneratorArgumentInfo::getLLVMBaseType() const
-{
-  return type.getLLVMType();
-}
-
-llvm::Type *GeneratorArgumentInfo::getLLVMType() const
-{
-  llvm::Type *our_type = getLLVMBaseType();
-
-  if(aggregation == GeneratorArgumentInfo::ARG_AGG_SINGLE)
-    ;
-  else if(aggregation == GeneratorArgumentInfo::ARG_AGG_REF)
-    our_type = PointerType::getUnqual(our_type);
-  else if(aggregation == GeneratorArgumentInfo::ARG_AGG_ARRAY)
-    our_type = PointerType::getUnqual(our_type);
-
-  return our_type;
-}
-
-void GeneratorArgumentInfo::parse(string in_str)
-{
-  aggregation = ARG_AGG_SINGLE;
-  type = TypeInfo(TypeInfo::TYPE_VOID);
-  aligned = false;
-  alias_index = -1;
-
-  int argument_aggregation = GeneratorArgumentInfo::ARG_AGG_SINGLE;
-  int attribute_offset = 0;
-  int offset = 0;
-
-  bool reading_attributes = true;
-
-  while (reading_attributes)
-    {
-      string maybe_attribute;
-
-      while (attribute_offset < in_str.size() && !isspace(in_str[attribute_offset]))
-        maybe_attribute.push_back(in_str[attribute_offset++]);
-
-      while (attribute_offset < in_str.size() && isspace(in_str[attribute_offset]))
-        attribute_offset++;
-
-      int alias_value;
-
-      if (maybe_attribute == "aligned")
-        setAligned(true);
-      else if (1 == sscanf(maybe_attribute.c_str(), "alias(%d)", &alias_value))
-        setAlias(alias_value);
-      else
-        reading_attributes = false;
-
-      if (reading_attributes)
-        offset += attribute_offset; /* Consume this word */
-    }
-
-  if(in_str[offset] == '*')
-    {
-      argument_aggregation = GeneratorArgumentInfo::ARG_AGG_REF;
-      setAggregation(GeneratorArgumentInfo::ARG_AGG_REF);
-      offset += 1;
-    }
-
-  string typestr;
-
-  while (offset < in_str.size() && isspace(in_str[offset]))
-    offset++;
-
-  while (offset < in_str.size() && isalpha(in_str[offset]))
-    typestr.push_back(in_str[offset++]);
-
-  while (offset < in_str.size() && isdigit(in_str[offset]))
-    typestr.push_back(in_str[offset++]);
-
-  type = TypeInfo(typestr);
-
-  /* If there's anything left this might be an array */
-  if (offset < in_str.size())
-    {
-      if (argument_aggregation == GeneratorArgumentInfo::ARG_AGG_REF)
-        {
-          throw GeneratorException("Couldn't parse argument string \"" + in_str + "\"");
-        }
-
-      if (0 == in_str.compare(offset, 2, "[]"))
-        {
-          argument_aggregation = GeneratorArgumentInfo::ARG_AGG_ARRAY;
-          setAggregation(GeneratorArgumentInfo::ARG_AGG_ARRAY);
-        }
-      else
-        {
-          throw GeneratorException("Couldn't parse argument string \"" + in_str + "\"");
-        }
-    }
-}
-
 string llvm_type_to_string(const Type *type)
 {
   string type_str;
@@ -277,7 +87,9 @@ llvm::Function *llvm_void_def_for(Module *module,
   return func;
 }
 
-static void validate_arguments(Function *target_func, list<GeneratorArgumentInfo> &target_arg_list)
+static void validate_arguments(Function *target_func,
+                               list<GeneratorArgumentInfo> &target_arg_list,
+                               list<string> &magic_arguments)
 {
   if (target_arg_list.begin()->getAggregation() != GeneratorArgumentInfo::ARG_AGG_ARRAY)
     throw GeneratorException("Return type must be an array");
@@ -303,7 +115,20 @@ static void validate_arguments(Function *target_func, list<GeneratorArgumentInfo
           throw GeneratorException("Alias out of range");
       }
 
-    if (target_func_args.size() != target_arg_list.size() - 1)
+    /* FIXME: Check the type of magic values */
+    unsigned int num_args = 0;
+
+    for (Function::ArgumentListType::iterator func_args_iter = target_func->getArgumentList().begin();
+         func_args_iter != target_func->getArgumentList().end();
+         ++func_args_iter)
+      {
+        string arg_name = func_args_iter->getName();
+
+        if (0 == count(magic_arguments.begin(), magic_arguments.end(), arg_name))
+          num_args++;
+      }
+
+    if (num_args != target_arg_list.size() - 1)
     {
       string error_str;
       llvm::raw_string_ostream rso(error_str);
@@ -411,28 +236,76 @@ static void increment_array_variables(IRBuilder<> &builder,
 
 }
 
+typedef struct
+{
+  GeneratorArgumentInfo arg_info;
+  Value *value;
+} LocalVariablePair;
+
+/* Build the arguments vector (part 1):
+ * For each argument the function requires:
+ *   If it's name is in magic_arguments, use matching pair from magic_arguments
+ *   Otherwise take the next value from (loop_variables, target_arg_list)
+ */
+static vector<LocalVariablePair> inject_magic_arguments(Function *target_func,
+                                                        const vector<Value*> &loop_variables,
+                                                        const vector<GeneratorArgumentInfo> &target_arg_list,
+                                                        map<string, LocalVariablePair> &magic_arguments)
+{
+  Function::ArgumentListType::iterator func_args_iter = target_func->getArgumentList().begin();
+
+  vector<Value*>::const_iterator loop_variables_iter = loop_variables.begin();
+  vector<GeneratorArgumentInfo>::const_iterator target_arg_iter = target_arg_list.begin();
+
+  vector<LocalVariablePair> result;
+
+  for (Function::ArgumentListType::iterator func_args_iter = target_func->getArgumentList().begin();
+       func_args_iter != target_func->getArgumentList().end();
+       ++func_args_iter)
+    {
+      string arg_name = func_args_iter->getName();
+
+      map<string, LocalVariablePair>::iterator found_magic = magic_arguments.find(arg_name);
+
+      if (found_magic != magic_arguments.end())
+        {
+          result.push_back(found_magic->second);
+        }
+      else
+        {
+          LocalVariablePair pair;
+          pair.arg_info = *target_arg_iter;
+          pair.value = *loop_variables_iter;
+          result.push_back(pair);
+
+          ++target_arg_iter;
+          ++loop_variables_iter;
+        }
+    }
+
+  return result;
+}
+
 /* Load values indicated by target_arg_list out of
    loop_variables and into a vector sutable for a
    function call.
  */
 static vector<Value*> pack_call_parameters(IRBuilder<> &builder,
-                                           vector<Value*> &loop_variables,
-                                           const vector<GeneratorArgumentInfo> &target_arg_list)
+                                           vector<LocalVariablePair> &argument_pairs)
 {
   vector<Value*> call_parameters;
-  vector<GeneratorArgumentInfo>::const_iterator args_iter = target_arg_list.begin();
-  vector<Value*>::iterator loop_variables_iter = loop_variables.begin();
+  vector<LocalVariablePair>::const_iterator args_iter = argument_pairs.begin();
 
-  while(args_iter != target_arg_list.end())
+  while(args_iter != argument_pairs.end())
     {
-      Value *call_parameter = *loop_variables_iter;
+      Value *call_parameter = args_iter->value;
 
-      if (args_iter->getAggregation() == GeneratorArgumentInfo::ARG_AGG_ARRAY)
+      if (args_iter->arg_info.getAggregation() == GeneratorArgumentInfo::ARG_AGG_ARRAY)
         {
           /* If our argument is an array deref to the current value */
           call_parameter = builder.CreateLoad(call_parameter);
 
-          if (args_iter->getAligned())
+          if (args_iter->arg_info.getAligned())
             call_parameter = builder.CreateAlignedLoad(call_parameter, 16);
           else
             call_parameter = builder.CreateAlignedLoad(call_parameter, 1);
@@ -445,7 +318,6 @@ static vector<Value*> pack_call_parameters(IRBuilder<> &builder,
 
       call_parameters.push_back(call_parameter);
 
-      ++loop_variables_iter;
       ++args_iter;
     }
 
@@ -463,7 +335,8 @@ llvm::Function *llvm_def_for(Module *module,
     throw GeneratorException("Module has no function \"" + function_name + "\"");
   }
 
-  validate_arguments(target_func, target_arg_list);
+  list<string> magic_arguments;
+  validate_arguments(target_func, target_arg_list, magic_arguments);
 
   /* generate wrapper function */
   IRBuilder<> builder(getGlobalContext());
@@ -518,10 +391,9 @@ llvm::Function *llvm_def_for(Module *module,
         call_arginfo = vector<GeneratorArgumentInfo>(active_arg_list.begin(), active_arg_list.end());
       }
 
-
-    vector<Value*> call_parameters = pack_call_parameters(builder,
-                                                          call_values,
-                                                          call_arginfo);
+    map<string, LocalVariablePair> magic_arguments_map;
+    vector<LocalVariablePair> call_pairs = inject_magic_arguments(target_func, call_values, call_arginfo, magic_arguments_map);
+    vector<Value*> call_parameters = pack_call_parameters(builder, call_pairs);
 
     Value *call_result = builder.CreateCall(target_func, call_parameters);
 
@@ -546,6 +418,161 @@ llvm::Function *llvm_def_for(Module *module,
 
   /* End loop */
   builder.SetInsertPoint(ExitBB);
+  builder.CreateRetVoid();
+
+  return func;
+}
+
+static Function *define_for_range_function(Module *module, const string &function_name, list<GeneratorArgumentInfo> &target_arg_list)
+{
+  IRBuilder<> Builder(getGlobalContext());
+
+  vector<Type*> call_arg_types;
+
+  for (list<GeneratorArgumentInfo>::iterator args_iter = target_arg_list.begin();
+       args_iter != target_arg_list.end();
+       ++args_iter)
+    {
+      if(!args_iter->getIsAlias())
+        call_arg_types.push_back(args_iter->getLLVMType());
+    }
+
+  /* Add the x.from and x.to parameters */
+  call_arg_types.push_back(Builder.getInt32Ty());
+  call_arg_types.push_back(Builder.getInt32Ty());
+
+  FunctionType *func_type = FunctionType::get(Builder.getVoidTy(), call_arg_types, false);
+
+  Function *func = Function::Create(func_type, Function::ExternalLinkage, function_name + ".iteration.range1D", module);
+
+  return func;
+}
+
+llvm::Function *llvm_void_def_for_range(Module *module,
+                                        const string &function_name,
+                                        list<GeneratorArgumentInfo> &target_arg_list)
+{
+  IRBuilder<> Builder(getGlobalContext());
+
+  Function *func = define_for_range_function(module, function_name, target_arg_list);
+
+  BasicBlock *func_body_block = BasicBlock::Create(getGlobalContext(), "entry", func);
+  Builder.SetInsertPoint(func_body_block);
+  Builder.CreateRetVoid();
+
+  return func;
+}
+
+
+llvm::Function *llvm_def_for_range(Module *module,
+                                   const string &function_name,
+                                   list<GeneratorArgumentInfo> &target_arg_list)
+{
+
+  /* find our target function */
+  Function *target_func = module->getFunction(function_name);
+  if (!target_func)
+  {
+    throw GeneratorException("Module has no function \"" + function_name + "\"");
+  }
+
+  list<string> magic_arguments;
+  magic_arguments.push_back("__x");
+
+  validate_arguments(target_func, target_arg_list, magic_arguments);
+
+  IRBuilder<> builder(getGlobalContext());
+
+  Function *func = define_for_range_function(module, function_name, target_arg_list);
+
+  bool alias_return_value = target_arg_list.begin()->getIsAlias();
+
+  /* Build iteration */
+  BasicBlock *func_body_block = BasicBlock::Create(getGlobalContext(), "entry", func);
+  builder.SetInsertPoint(func_body_block);
+
+  vector<Value*> loop_variables = load_arguments_to_variables(builder, func);
+
+  vector<GeneratorArgumentInfo> active_arg_list;
+
+  if (!alias_return_value)
+    active_arg_list = vector<GeneratorArgumentInfo>(target_arg_list.begin(), target_arg_list.end());
+  else
+    active_arg_list = vector<GeneratorArgumentInfo>(++target_arg_list.begin(), target_arg_list.end());
+
+  load_referance_arguments(builder, loop_variables, active_arg_list);
+
+  Value *return_location = NULL;
+  if (!alias_return_value)
+    return_location = loop_variables[0];
+  else
+    return_location = loop_variables[target_arg_list.begin()->getAlias() - 1];
+
+  /* FIXME: Align alloca */
+  Value *x_start = *(loop_variables.end() - 2);
+  Value *x_end   = *(loop_variables.end() - 1);
+  Value *x_variable = builder.CreateAlloca(builder.getInt32Ty());
+  builder.CreateStore(builder.CreateLoad(x_start), x_variable);
+
+  /* Begin loop */
+  BasicBlock *loop_body_block = BasicBlock::Create(getGlobalContext(), "loop_body", func);
+  BasicBlock *loop_cond_block = BasicBlock::Create(getGlobalContext(), "loop_cond", func);
+  BasicBlock *exit_block = BasicBlock::Create(getGlobalContext(), "exit", func);
+  builder.CreateBr(loop_cond_block);
+
+  builder.SetInsertPoint(loop_body_block);
+  {
+    /* Call our target */
+    vector<Value *> call_values;
+    vector<GeneratorArgumentInfo> call_arginfo;
+
+    if (!alias_return_value)
+      {
+        call_values = vector<Value *>(loop_variables.begin() + 1, loop_variables.end() - 2);
+        call_arginfo = vector<GeneratorArgumentInfo>(active_arg_list.begin() + 1, active_arg_list.end());
+      }
+    else
+      {
+        call_values = vector<Value *>(loop_variables.begin(), loop_variables.end() - 2);
+        call_arginfo = vector<GeneratorArgumentInfo>(active_arg_list.begin(), active_arg_list.end());
+      }
+
+    map<string, LocalVariablePair> magic_arguments_map;
+    magic_arguments_map["__x"] = (LocalVariablePair){GeneratorArgumentInfo("uint"), x_variable};
+
+    vector<LocalVariablePair> call_pairs = inject_magic_arguments(target_func, call_values, call_arginfo, magic_arguments_map);
+    vector<Value*> call_parameters = pack_call_parameters(builder, call_pairs);
+
+    Value *call_result = builder.CreateCall(target_func, call_parameters);
+
+    if (target_arg_list.begin()->getAligned())
+      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 16);
+    else
+      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 1);
+
+    increment_array_variables(builder, loop_variables, active_arg_list);
+
+    /* Increment the index value */
+    {
+      Value *val = builder.CreateLoad(x_variable);
+      val = builder.CreateAdd(val, builder.getInt32(1));
+      builder.CreateStore(val, x_variable);
+    }
+
+    builder.CreateBr(loop_cond_block);
+  }
+
+  builder.SetInsertPoint(loop_cond_block);
+  {
+    Value *val = builder.CreateLoad(x_variable);
+    Value *max_val = builder.CreateLoad(x_end);
+    Value *comparison = builder.CreateICmpSLT(val, max_val);
+    builder.CreateStore(val, x_variable);
+    builder.CreateCondBr(comparison, loop_body_block, exit_block);
+  }
+
+  /* End loop */
+  builder.SetInsertPoint(exit_block);
   builder.CreateRetVoid();
 
   return func;
