@@ -666,18 +666,82 @@ Value *CallAST::codegen(ScopeContext *scope)
         throw SyntaxErrorException(error_string.str());
         }
 
-      /* FIXME: Validate arguments */
       IRBuilder<> *Builder = scope->Builder;
 
       Value *value = args[0]->codegen(scope);
       Value *min   = args[1]->codegen(scope);
       Value *max   = args[2]->codegen(scope);
 
+      TypeInfo value_type = args[0]->getResultType(scope);
+      TypeInfo min_type   = args[1]->getResultType(scope);
+      TypeInfo max_type   = args[2]->getResultType(scope);
+
+      if ((value_type.getWidth() != min_type.getWidth()) ||
+          (min_type.getWidth()   != max_type.getWidth()))
+        {
+          std::string error;
+          llvm::raw_string_ostream rso(error);
+          rso << "Type mismatch for " << Target->getName() << " : ";
+          rso << value_type.toStr();
+          rso << " vs ";
+          rso << min_type.toStr();
+          rso << " vs ";
+          rso << max_type.toStr();
+          throw SyntaxErrorException(rso.str());
+        }
+
+      TypeInfo target_type = TypeInfo(TypeInfo::TYPE_FLOAT, value_type.getWidth());
+      cast_value(scope, target_type, value_type, &value);
+      cast_value(scope, target_type, min_type, &min);
+      cast_value(scope, target_type, max_type, &max);
+
       Value *mask;
       mask = Builder->CreateFCmpUGE(value, min);
       value = Builder->CreateSelect(mask, value, min);
       mask = Builder->CreateFCmpULE(value, max);
       value = Builder->CreateSelect(mask, value, max);
+      return value;
+    }
+  else if ((std::string("min") == Target->getName()) || (std::string("max") == Target->getName()))
+    {
+      const int num_args = 2;
+      if (args.size() != num_args)
+        {
+          std::stringstream error_string;
+          error_string << "Called \"" << Target->getName() << "\" with ";
+          error_string << args.size() << " arguments, expected " << num_args;
+        throw SyntaxErrorException(error_string.str());
+        }
+
+      IRBuilder<> *Builder = scope->Builder;
+
+      Value *value_a = args[0]->codegen(scope);
+      Value *value_b = args[1]->codegen(scope);
+
+      TypeInfo a_type = args[0]->getResultType(scope);
+      TypeInfo b_type = args[1]->getResultType(scope);
+
+      if (a_type.getWidth() != b_type.getWidth())
+        {
+          std::string error;
+          llvm::raw_string_ostream rso(error);
+          rso << "Type mismatch for " << Target->getName() << " : ";
+          rso << a_type.toStr();
+          rso << " vs ";
+          rso << b_type.toStr();
+          throw SyntaxErrorException(rso.str());
+        }
+
+      TypeInfo target_type = TypeInfo(TypeInfo::TYPE_FLOAT, a_type.getWidth());
+      cast_value(scope, target_type, a_type, &value_a);
+      cast_value(scope, target_type, b_type, &value_b);
+
+      Value *mask = NULL;
+      if (std::string("min") == Target->getName())
+        mask = Builder->CreateFCmpULE(value_a, value_b);
+      else
+        mask = Builder->CreateFCmpUGE(value_a, value_b);
+      Value *value = Builder->CreateSelect(mask, value_a, value_b);
       return value;
     }
   else if (std::string("sqrt") == Target->getName())
@@ -691,7 +755,6 @@ Value *CallAST::codegen(ScopeContext *scope)
         throw SyntaxErrorException(error_string.str());
         }
 
-      /* FIXME: Validate arguments */
       IRBuilder<> *Builder = scope->Builder;
 
       Value *arg_value   = args[0]->codegen(scope);
@@ -724,7 +787,14 @@ nanjit::TypeInfo CallAST::getResultType(ScopeContext *scope)
     }
   else if (std::string("clamp") == Target->getName())
     {
-      return ArgList->getArgsList()[0]->getResultType(scope);
+      TypeInfo arg_type = ArgList->getArgsList()[0]->getResultType(scope);
+      return TypeInfo(TypeInfo::TYPE_FLOAT, arg_type.getWidth());
+    }
+  else if ((std::string("min") == Target->getName()) ||
+           (std::string("max") == Target->getName()))
+    {
+      TypeInfo arg_type = ArgList->getArgsList()[0]->getResultType(scope);
+      return TypeInfo(TypeInfo::TYPE_FLOAT, arg_type.getWidth());
     }
   else if (std::string("sqrt") == Target->getName())
     {
