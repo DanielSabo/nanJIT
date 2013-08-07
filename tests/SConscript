@@ -20,6 +20,7 @@ argalias_app = external_test_env.Program("argalias", ["argalias.cpp"])
 
 test_alias = Alias('test', [], [File("examples_tests.py").abspath])
 test_alias = Alias('test', [], [File("error_tests.py").abspath])
+test_alias = Alias('test', [], [File("intrinsics_tests.py").abspath])
 test_alias = Alias('test', [], [typeinfo_app[0].abspath])
 test_alias = Alias('test', [], [argtypes_app[0].abspath])
 test_alias = Alias('test', [], [argalias_app[0].abspath])
