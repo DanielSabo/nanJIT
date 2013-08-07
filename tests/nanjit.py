@@ -16,6 +16,8 @@ _libnanjit.jit_module_for_src.argtypes = [ctypes.c_char_p, ctypes.c_uint]
 
 _libnanjit.jit_module_get_iteration.restype = ctypes.c_void_p
 
+_libnanjit.jit_module_get_range_iteration.restype = ctypes.c_void_p
+
 _libnanjit.jit_module_is_fallback_function.restype = ctypes.c_void_p
 _libnanjit.jit_module_is_fallback_function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 
@@ -66,7 +68,30 @@ def _call_get_iteration(jm, name, return_type, *args):
   # Wrap the function pointer in the prototype
   return proto(funcptr)
 
+def _call_get_range_iteration(jm, name, return_type, *args):
+  if args[-1] is not None:
+    raise Exception("Args list must end in None")
+
+  args = [name, return_type] + list(args)
+
+  # Convert the arguments to ctypes pointers, we need to do this explicitly because we can't set
+  # the argument types for a varargs function.
+  arg_chars = [ctypes.c_char_p(n) for n in args]
+
+  # Parse the nanjit typestrings into ctype types for the returned function's prototype
+  arg_ctypes = [None] + [parse_argtype(n) for n in args[1:-1]] + [ctypes.c_int32, ctypes.c_int32]
+
+  # Build a ctype function prototype that matches the expected arguments of the iteration
+  proto = ctypes.CFUNCTYPE(*arg_ctypes)
+
+  # Get the jit function
+  funcptr = _libnanjit.jit_module_get_range_iteration(ctypes.c_void_p(jm), *arg_chars)
+
+  # Wrap the function pointer in the prototype
+  return proto(funcptr)
+
 jit_module_for_src = _libnanjit.jit_module_for_src
 jit_module_get_iteration = _call_get_iteration
+jit_module_get_range_iteration = _call_get_range_iteration
 jit_module_is_fallback_function = _libnanjit.jit_module_is_fallback_function
 jit_module_destroy = _libnanjit.jit_module_destroy

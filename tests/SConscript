@@ -23,6 +23,7 @@ if sys.platform == "linux2":
   test_run_env["ENV"]["LD_LIBRARY_PATH"] = nanjit_lib[0].dir
 
 test_alias = test_run_env.Alias('test', [], [File("examples_tests.py").abspath])
+test_alias = test_run_env.Alias('test', [], [File("range_iter_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("error_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("intrinsics_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [typeinfo_app[0].abspath])
