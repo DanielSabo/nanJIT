@@ -1,6 +1,6 @@
 import os, sys
 
-Import("env", "llvm_env")
+Import("env", "llvm_env", "nanjit_lib")
 
 internal_test_env = llvm_env.Clone()
 internal_test_env.Append(CPPPATH = [".."])
@@ -18,10 +18,14 @@ external_test_env.Append(CPPPATH = [".."])
 argtypes_app = external_test_env.Program("argtypes", ["argtypes.cpp"])
 argalias_app = external_test_env.Program("argalias", ["argalias.cpp"])
 
-test_alias = Alias('test', [], [File("examples_tests.py").abspath])
-test_alias = Alias('test', [], [File("error_tests.py").abspath])
-test_alias = Alias('test', [], [File("intrinsics_tests.py").abspath])
-test_alias = Alias('test', [], [typeinfo_app[0].abspath])
-test_alias = Alias('test', [], [argtypes_app[0].abspath])
-test_alias = Alias('test', [], [argalias_app[0].abspath])
+test_run_env = Environment()
+if sys.platform == "linux2":
+  test_run_env["ENV"]["LD_LIBRARY_PATH"] = nanjit_lib[0].dir
+
+test_alias = test_run_env.Alias('test', [], [File("examples_tests.py").abspath])
+test_alias = test_run_env.Alias('test', [], [File("error_tests.py").abspath])
+test_alias = test_run_env.Alias('test', [], [File("intrinsics_tests.py").abspath])
+test_alias = test_run_env.Alias('test', [], [typeinfo_app[0].abspath])
+test_alias = test_run_env.Alias('test', [], [argtypes_app[0].abspath])
+test_alias = test_run_env.Alias('test', [], [argalias_app[0].abspath])
 AlwaysBuild(test_alias)

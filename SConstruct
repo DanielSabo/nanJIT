@@ -172,7 +172,7 @@ nanjit_lib = llvm_env.SharedLibrary("nanjit", nanjit_lib_inputs)
 
 env.Command("nanjit.pc", "nanjit.pc.py", "python $SOURCE $PREFIX > $TARGET")
 
-SConscript(["tests/SConscript"], exports=["env", "llvm_env"])
+SConscript(["tests/SConscript"], exports=["env", "llvm_env", "nanjit_lib"])
 SConscript(["tools/SConscript"], exports=["env", "llvm_env"])
 
 # Install targets
