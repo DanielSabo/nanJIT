@@ -278,6 +278,50 @@ float4 process(float4 in, float4 aux)
       [0.0, 0.5, 0.0, 0.5],
       [-1.0000, 1.0000, -1.0000, 1.0000])
 
+  def test_example_010_assignment_casts(self):
+    shaderstr = \
+"""
+float4 process(float4 in, float4 aux)
+{
+  float4 a = (uint4)(4, 4, 4, 4);
+  float4 b = (int4)(-3, -3, -3, -3);
+  float4 c = (ushort4)(1, 1, 1, 1);
+  float4 d = (short4)(-2, -2, -2, -2);
+
+  return (float4)(a.s0, b.s0, c.s0, d.s0);
+}
+
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.5, 0.5, 0.5],
+      [0.0, 0.5, 0.0, 0.5],
+      [4.0, -3.0, 1.0, -2.0])
+
+  def test_example_011_assignment_casts2(self):
+    shaderstr = \
+"""
+float4 process(float4 in, float4 aux)
+{
+  float4 a = (float4)(0, 0, 0, 0);
+  float4 b = (float4)(0, 0, 0, 0);
+  float4 c = (float4)(0, 0, 0, 0);
+  float4 d = (float4)(0, 0, 0, 0);
+  a = (uint4)(4, 4, 4, 4);
+  b = (int4)(-3, -3, -3, -3);
+  c = (ushort4)(1, 1, 1, 1);
+  d = (short4)(-2, -2, -2, -2);
+
+  return (float4)(a.s0, b.s0, c.s0, d.s0);
+}
+
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.5, 0.5, 0.5],
+      [0.0, 0.5, 0.0, 0.5],
+      [4.0, -3.0, 1.0, -2.0])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=10)

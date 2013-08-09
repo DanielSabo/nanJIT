@@ -76,5 +76,27 @@ class ErrorTests(BaseNanjitTestErrorFunc):
 """
     self.doTest(shaderstr, "process")
 
+  def test_005_variable_redefinition(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float4 out = in;
+  float4 out = aux;
+  return out;
+}
+"""
+    self.doTest(shaderstr, "process")
+
+  def test_006_variable_redefinition2(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float4 out = in;
+  int4   out = (int4)(0, 0, 0, 0);
+  return out;
+}
+"""
+    self.doTest(shaderstr, "process")
+
 if __name__ == '__main__':
     unittest.main(verbosity=10)

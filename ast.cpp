@@ -177,6 +177,10 @@ void ScopeContext::setVariable(TypeInfo type, std::string name, llvm::Value *val
       Variables[name] = TmpB.CreateAlloca(value->getType());
       Types[name] = type;
     }
+  else
+    {
+      throw SyntaxErrorException("Redefinition of variable \"" + name + "\"");
+    }
   
   Builder->CreateStore(value, Variables[name]);
 }
