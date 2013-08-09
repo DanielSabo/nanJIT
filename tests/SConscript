@@ -26,7 +26,10 @@ test_alias = test_run_env.Alias('test', [], [File("examples_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("range_iter_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("error_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("intrinsics_tests.py").abspath])
-test_alias = test_run_env.Alias('test', [], [typeinfo_app[0].abspath])
-test_alias = test_run_env.Alias('test', [], [argtypes_app[0].abspath])
-test_alias = test_run_env.Alias('test', [], [argalias_app[0].abspath])
+test_run_env.Depends(test_alias, nanjit_lib)
+
+for app in typeinfo_app + argtypes_app + argalias_app:
+  test_alias = test_run_env.Alias('test', [], [app.abspath])
+  test_run_env.Depends(test_alias, app)
+
 AlwaysBuild(test_alias)
