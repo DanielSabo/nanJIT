@@ -207,6 +207,26 @@ nanjit::TypeInfo ScopeContext::getTypeInfo(std::string name)
   throw SyntaxErrorException ("Unknown variable: " + name);
 }
 
+ASTNode::ASTNode()
+{
+  line_number = -1;
+  column_number = -1;
+}
+
+void ASTNode::setLocation(int line, int col)
+{
+  line_number = line;
+  /* FIXME: Bison considers the first column to be 0 */
+  column_number = col + 1;
+}
+
+SyntaxErrorException ASTNode::genSyntaxError(std::string e)
+{
+  std::stringstream error_string;
+  error_string << "(" << line_number << ":" << column_number << "): " << e;
+  return SyntaxErrorException(error_string.str());
+}
+
 Value *ExprAST::codegen(ScopeContext *scope)
 {
   throw SyntaxErrorException ("Codegen not implemented");
@@ -469,7 +489,7 @@ Value *ShuffleSelfAST::codegen(ScopeContext *scope)
   VectorType *lhs_type = dyn_cast<VectorType>(lhs->getType());
 
   if (!lhs_type)
-    throw SyntaxErrorException("LHS of ShuffleSelfAST is not a vector");
+    throw genSyntaxError("LHS of ShuffleSelfAST is not a vector");
   
   std::string access = Access->getName();
   if (access[0] == 's' && access.size() == 5)
@@ -477,9 +497,9 @@ Value *ShuffleSelfAST::codegen(ScopeContext *scope)
       int a, b, c, d;
       int max_index = lhs_type->getNumElements() - 1;
       if (4 != sscanf(access.c_str(), "s%1d%1d%1d%1d", &a, &b, &c, &d))
-        throw SyntaxErrorException("ShuffleSelfAST index invalid");
+        throw genSyntaxError("ShuffleSelfAST index invalid");
       if (a > max_index || b > max_index || c > max_index || d > max_index)
-        throw SyntaxErrorException("ShuffleSelfAST index out of range");
+        throw genSyntaxError("ShuffleSelfAST index out of range");
       
       Value *undef = UndefValue::get(lhs->getType());
       Value *mask  = UndefValue::get(VectorType::get(Builder->getInt32Ty(), 4));
@@ -488,19 +508,19 @@ Value *ShuffleSelfAST::codegen(ScopeContext *scope)
       mask = Builder->CreateInsertElement(mask, Builder->getInt32(c), Builder->getInt32(2));
       mask = Builder->CreateInsertElement(mask, Builder->getInt32(d), Builder->getInt32(3));
       return Builder->CreateShuffleVector(lhs, undef, mask);
-      throw SyntaxErrorException("ShuffleSelfAST");
+      throw genSyntaxError("ShuffleSelfAST");
     }
   else if (access[0] == 's' && access.size() == 2)
     {
       int a;
       int max_index = lhs_type->getNumElements() - 1;
       if (1 != sscanf(access.c_str(), "s%1d", &a))
-        throw SyntaxErrorException("ShuffleSelfAST index invalid");
+        throw genSyntaxError("ShuffleSelfAST index invalid");
       if (a > max_index)
-        throw SyntaxErrorException("ShuffleSelfAST index out of range");
+        throw genSyntaxError("ShuffleSelfAST index out of range");
       return Builder->CreateExtractElement(lhs, Builder->getInt32(a));
     }
-  throw SyntaxErrorException(std::string("Invalid indexes for ShuffleSelfAST: ") + access);
+  throw genSyntaxError(std::string("Invalid indexes for ShuffleSelfAST: ") + access);
 }
 
 nanjit::TypeInfo ShuffleSelfAST::getResultType(ScopeContext *scope)
@@ -531,7 +551,7 @@ Value *VectorConstructorAST::codegen(ScopeContext *scope)
 
   int width = vector_type.getWidth();
   if (width != 4)
-    throw SyntaxErrorException(std::string("Invalid vector type: ") + Type->getName());
+    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
   
   Value *out_value = UndefValue::get(typeinfo_get_llvm_type(vector_type));
 
@@ -562,7 +582,7 @@ nanjit::TypeInfo VectorConstructorAST::getResultType(ScopeContext *scope)
   TypeInfo type = TypeInfo(Type->getName());
 
   if (type.getWidth() != 4)
-    throw SyntaxErrorException(std::string("Invalid vector type: ") + Type->getName());
+    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
 
   return type;
 }

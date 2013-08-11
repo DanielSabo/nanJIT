@@ -38,7 +38,18 @@ public:
   const char* what() const throw() { return error_string.c_str(); }
 };
 
-class ExprAST {
+class ASTNode {
+private:
+  int line_number;
+  int column_number;
+public:
+  ASTNode();
+  void setLocation(int line, int col);
+  SyntaxErrorException genSyntaxError(std::string e);
+};
+
+
+class ExprAST : public ASTNode {
 public:
   virtual ~ExprAST() {}
   virtual llvm::Value *codegen(ScopeContext *scope);
@@ -215,7 +226,7 @@ public:
   virtual ~FunctionArgListAST();
 };
 
-class FunctionAST {
+class FunctionAST : public ASTNode {
   std::auto_ptr<IdentifierExprAST> Name;
   std::auto_ptr<IdentifierExprAST> ReturnType;
   std::auto_ptr<FunctionArgListAST> Args;

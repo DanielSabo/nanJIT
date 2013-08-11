@@ -39,6 +39,8 @@ using namespace std;
   static int yylex(nanjit::BisonParser::semantic_type *yylval,
                    nanjit::BisonParser::location_type *location,
                    nanjit::Scanner &scanner);
+
+  #define SETLOC(node, location) node->setLocation(location.begin.line, location.begin.column)
 }
 
 
@@ -107,7 +109,7 @@ module:
   | function module { (*module)->prependFunction($1); }
 
 function:
-  type_name identifier LPAREN arguments RPAREN LCURL block RCURL { $$ = new FunctionAST($1, $2, $4, $7); }
+  type_name identifier LPAREN arguments RPAREN LCURL block RCURL { $$ = new FunctionAST($1, $2, $4, $7); SETLOC($$, @$); }
 
 arguments:
   argument { $$ = new FunctionArgListAST($1); }
@@ -122,48 +124,48 @@ block:
 
 statement:
   expression SEMICOLON { $$ = $1; }
-  | IF LPAREN comparison RPAREN LCURL block RCURL { $$ = new IfElseAST($3, $6, NULL); }
-  | RETURN SEMICOLON  { $$ = new ReturnAST(); }
-  | RETURN expression SEMICOLON { $$ = new ReturnAST($2); }
+  | IF LPAREN comparison RPAREN LCURL block RCURL { $$ = new IfElseAST($3, $6, NULL); SETLOC($$, @$); }
+  | RETURN SEMICOLON  { $$ = new ReturnAST(); SETLOC($$, @$); }
+  | RETURN expression SEMICOLON { $$ = new ReturnAST($2); SETLOC($$, @$); }
 
 comparison:
-  expression PAIR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::EqualTo, $1, $3); }
-  | expression GREATER_THAN expression { $$ = new ComparisonAST(ComparisonAST::GreaterThan, $1, $3); }
-  | expression GREATER_THAN_OR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::GreaterThanOrEqual, $1, $3); }
-  | expression LESS_THAN expression { $$ = new ComparisonAST(ComparisonAST::LessThan, $1, $3); }
-  | expression LESS_THAN_OR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::LessThanOrEqual, $1, $3); }
+  expression PAIR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::EqualTo, $1, $3); SETLOC($$, @$); }
+  | expression GREATER_THAN expression { $$ = new ComparisonAST(ComparisonAST::GreaterThan, $1, $3); SETLOC($$, @$); }
+  | expression GREATER_THAN_OR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::GreaterThanOrEqual, $1, $3); SETLOC($$, @$); }
+  | expression LESS_THAN expression { $$ = new ComparisonAST(ComparisonAST::LessThan, $1, $3); SETLOC($$, @$); }
+  | expression LESS_THAN_OR_EQUAL expression { $$ = new ComparisonAST(ComparisonAST::LessThanOrEqual, $1, $3); SETLOC($$, @$); }
 
 expression:
   value { $$ = $1; }
   | comparison { $$ = $1; }
-  | LPAREN type_name RPAREN LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN { $$ = new VectorConstructorAST($2, $5, $7, $9, $11); }
-  | identifier EQUAL expression    { $$ = new AssignmentExprAST($1, $3); }
-  | type_name identifier EQUAL expression { $$ = new AssignmentExprAST($1, $2, $4); }
-  | expression PLUS expression     { $$ = new BinaryExprAST('+', $1, $3); }
-  | expression MINUS expression    { $$ = new BinaryExprAST('-', $1, $3); }
-  | expression ASTERISK expression { $$ = new BinaryExprAST('*', $1, $3); }
-  | expression SLASH expression    { $$ = new BinaryExprAST('/', $1, $3); }
-  | identifier DOT identifier { $$ = new ShuffleSelfAST($1, $3); }
+  | LPAREN type_name RPAREN LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN { $$ = new VectorConstructorAST($2, $5, $7, $9, $11); SETLOC($$, @$); }
+  | identifier EQUAL expression    { $$ = new AssignmentExprAST($1, $3); SETLOC($$, @$); }
+  | type_name identifier EQUAL expression { $$ = new AssignmentExprAST($1, $2, $4); SETLOC($$, @$); }
+  | expression PLUS expression     { $$ = new BinaryExprAST('+', $1, $3); SETLOC($$, @$); }
+  | expression MINUS expression    { $$ = new BinaryExprAST('-', $1, $3); SETLOC($$, @$); }
+  | expression ASTERISK expression { $$ = new BinaryExprAST('*', $1, $3); SETLOC($$, @$); }
+  | expression SLASH expression    { $$ = new BinaryExprAST('/', $1, $3); SETLOC($$, @$); }
+  | identifier DOT identifier { $$ = new ShuffleSelfAST($1, $3); SETLOC($$, @$); }
   | LPAREN expression RPAREN { $$ = $2; }
-  | identifier LPAREN RPAREN { $$ = new CallAST($1, new CallArgListAST()); }
-  | identifier LPAREN call_arguments RPAREN { $$ = new CallAST($1, $3); }
+  | identifier LPAREN RPAREN { $$ = new CallAST($1, new CallArgListAST()); SETLOC($$, @$); }
+  | identifier LPAREN call_arguments RPAREN { $$ = new CallAST($1, $3); SETLOC($$, @$); }
 
 call_arguments:
   expression { $$ = new CallArgListAST($1); }
   | expression COMMA call_arguments { $3->prependArg($1); $$ = $3; }
 
 type_name:
-  TYPENAME { $$ = new IdentifierExprAST($1); free($1); }
+  TYPENAME { $$ = new IdentifierExprAST($1); free($1); SETLOC($$, @$); }
 
 value: 
-  INT { $$ = new IntExprAST($1); free($1); }
-  | FLOAT { $$ = new FloatExprAST($1); free($1); }
-  | DOUBLE { $$ = new DoubleExprAST($1); free($1); }
+  INT { $$ = new IntExprAST($1); free($1); SETLOC($$, @$); }
+  | FLOAT { $$ = new FloatExprAST($1); free($1); SETLOC($$, @$); }
+  | DOUBLE { $$ = new DoubleExprAST($1); free($1); SETLOC($$, @$); }
   | identifier { $$ = $1; }
-  | MINUS value { $$ = new BinaryExprAST('-', new IntExprAST("0"), $2); }
+  | MINUS value { $$ = new BinaryExprAST('-', new IntExprAST("0"), $2); SETLOC($$, @$); }
 
 identifier:
-  IDENTIFIER { $$ = new IdentifierExprAST($1); free($1); }
+  IDENTIFIER { $$ = new IdentifierExprAST($1); free($1); SETLOC($$, @$); }
 
 %%
 #include "parser.tab.hpp"
