@@ -322,6 +322,38 @@ float4 process(float4 in, float4 aux)
       [0.0, 0.5, 0.0, 0.5],
       [4.0, -3.0, 1.0, -2.0])
 
+  def test_example_012_vector_init(self):
+    shaderstr = \
+"""
+float4 process(float4 in, float4 aux)
+{
+  float2 fa = (float2)(5.5f, 5.5f);
+  float3 fb = (float3)(5.5f, 5.5f, 5.5f);
+  float4 fc = (float4)(5.5f, 5.5f, 5.5f, 5.5f);
+
+  int2 ia = (int2)(-1, -1);
+  int3 ib = (int3)(-1, -1, -1);
+  int4 ic = (int4)(-1, -1, -1, -1);
+
+  ushort2 usa = (ushort2)(3, 3);
+  ushort3 usb = (ushort3)(3, 3, 3);
+  ushort4 usc = (ushort4)(3, 3, 3, 3);
+
+  short2 sa = (short2)(8, 8);
+  short3 sb = (short3)(8, 8, 8);
+  short4 sc = (short4)(8, 8, 8, 8);
+
+  //return (float4)(fa.s1, ib.s2, usc.s4, sd.s7);
+  return (float4)(fa.s1, ib.s2, usc.s3, sa.s0);
+}
+
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.5, 0.5, 0.5],
+      [0.0, 0.5, 0.0, 0.5],
+      [5.5, -1.0, 3.0, 8.0])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=10)

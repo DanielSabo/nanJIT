@@ -543,64 +543,6 @@ ostream& ShuffleSelfAST::print(ostream& os)
   return os;
 }
 
-Value *VectorConstructorAST::codegen(ScopeContext *scope)
-{
-  IRBuilder<> *Builder = scope->Builder;
-
-  TypeInfo vector_type = TypeInfo(Type->getName());
-
-  int width = vector_type.getWidth();
-  if (width != 4)
-    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
-  
-  Value *out_value = UndefValue::get(typeinfo_get_llvm_type(vector_type));
-
-  TypeInfo element_type = TypeInfo(vector_type.getBaseType());
-  Value *elmement_value = NULL;
-
-  elmement_value = A->codegen(scope);
-  cast_value(scope, element_type, A->getResultType(scope), &elmement_value);
-  out_value = Builder->CreateInsertElement(out_value, elmement_value, Builder->getInt32(0));
-
-  elmement_value = B->codegen(scope);
-  cast_value(scope, element_type, B->getResultType(scope), &elmement_value);
-  out_value = Builder->CreateInsertElement(out_value, elmement_value, Builder->getInt32(1));
-
-  elmement_value = C->codegen(scope);
-  cast_value(scope, element_type, C->getResultType(scope), &elmement_value);
-  out_value = Builder->CreateInsertElement(out_value, elmement_value, Builder->getInt32(2));
-
-  elmement_value = D->codegen(scope);
-  cast_value(scope, element_type, D->getResultType(scope), &elmement_value);
-  out_value = Builder->CreateInsertElement(out_value, elmement_value, Builder->getInt32(3));
-
-  return out_value;
-}
-
-nanjit::TypeInfo VectorConstructorAST::getResultType(ScopeContext *scope)
-{
-  TypeInfo type = TypeInfo(Type->getName());
-
-  if (type.getWidth() != 4)
-    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
-
-  return type;
-}
-
-ostream& VectorConstructorAST::print(ostream& os)
-{
-  os << "VectorConstructorAST(";
-  A->print(os);
-  os << " ";
-  B->print(os);
-  os << " ";
-  C->print(os);
-  os << " ";
-  D->print(os);
-  os << ")";
-  return os;
-}
-
 CallArgListAST::CallArgListAST()
 {
 }
@@ -636,6 +578,55 @@ ostream& CallArgListAST::print(ostream& os)
 
       (*it)->print(os);
     }
+  os << ")";
+  return os;
+}
+
+Value *VectorConstructorAST::codegen(ScopeContext *scope)
+{
+  IRBuilder<> *Builder = scope->Builder;
+
+  TypeInfo vector_type = TypeInfo(Type->getName());
+  std::vector<ExprAST *> &args = ArgList->getArgsList();
+
+  int width = vector_type.getWidth();
+
+  if (width < 2)
+    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
+
+  if (args.size() != width)
+    throw genSyntaxError(std::string("Invalid arguments to vector constructor for ") + Type->getName());
+
+  Value *out_value = UndefValue::get(typeinfo_get_llvm_type(vector_type));
+  TypeInfo element_type = TypeInfo(vector_type.getBaseType());
+
+  for (int element_index = 0; element_index < width; ++element_index)
+    {
+      ExprAST *elmement_ast = args[element_index];
+      Value *elmement_value = elmement_ast->codegen(scope);
+      cast_value(scope, element_type, elmement_ast->getResultType(scope), &elmement_value);
+      out_value = Builder->CreateInsertElement(out_value, elmement_value, Builder->getInt32(element_index));
+    }
+
+  return out_value;
+}
+
+nanjit::TypeInfo VectorConstructorAST::getResultType(ScopeContext *scope)
+{
+  TypeInfo type = TypeInfo(Type->getName());
+
+  if (type.getWidth() < 2)
+    throw genSyntaxError(std::string("Invalid vector type: ") + Type->getName());
+
+  return type;
+}
+
+ostream& VectorConstructorAST::print(ostream& os)
+{
+  os << "VectorConstructorAST(";
+  Type->print(os);
+  os << " ";
+  ArgList->print(os);
   os << ")";
   return os;
 }

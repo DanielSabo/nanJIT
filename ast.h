@@ -129,17 +129,6 @@ public:
   virtual std::ostream& print(std::ostream& os);
 };
 
-class VectorConstructorAST : public ExprAST {
-  std::auto_ptr<IdentifierExprAST> Type;
-  std::auto_ptr<ExprAST> A, B, C, D;
-public:
-  VectorConstructorAST(IdentifierExprAST *type, ExprAST *a, ExprAST *b, ExprAST *c, ExprAST *d)
-    : Type(type), A(a), B(b), C(c), D(d) {}
-  virtual llvm::Value *codegen(ScopeContext *scope);
-  virtual nanjit::TypeInfo getResultType(ScopeContext *scope);
-  virtual std::ostream& print(std::ostream& os);
-};
-
 class CallArgListAST {
   std::vector<ExprAST *> Args;
 public:
@@ -150,6 +139,17 @@ public:
   virtual std::ostream& print(std::ostream& os);
 
   virtual ~CallArgListAST();
+};
+
+class VectorConstructorAST : public ExprAST {
+  std::auto_ptr<IdentifierExprAST> Type;
+  std::auto_ptr<CallArgListAST> ArgList;
+public:
+  VectorConstructorAST(IdentifierExprAST *type, CallArgListAST *arg_list)
+    : Type(type), ArgList(arg_list) {}
+  virtual llvm::Value *codegen(ScopeContext *scope);
+  virtual nanjit::TypeInfo getResultType(ScopeContext *scope);
+  virtual std::ostream& print(std::ostream& os);
 };
 
 class CallAST : public ExprAST {

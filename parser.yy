@@ -138,7 +138,7 @@ comparison:
 expression:
   value { $$ = $1; }
   | comparison { $$ = $1; }
-  | LPAREN type_name RPAREN LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN { $$ = new VectorConstructorAST($2, $5, $7, $9, $11); SETLOC($$, @$); }
+  | LPAREN type_name RPAREN LPAREN call_arguments RPAREN { $$ = new VectorConstructorAST($2, $5); SETLOC($$, @$); }
   | identifier EQUAL expression    { $$ = new AssignmentExprAST($1, $3); SETLOC($$, @$); }
   | type_name identifier EQUAL expression { $$ = new AssignmentExprAST($1, $2, $4); SETLOC($$, @$); }
   | expression PLUS expression     { $$ = new BinaryExprAST('+', $1, $3); SETLOC($$, @$); }
