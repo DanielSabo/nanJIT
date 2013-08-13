@@ -32,7 +32,7 @@ class BaseNanjitTestFloatFunc(unittest.TestCase):
 
     jitmod = None
     try:
-      print ""
+      #print ""
       jitmod = nanjit.jit_module_for_src(shaderstr, 0)
       jitfunc = nanjit.jit_module_get_iteration(jitmod, funcname, "float4[]", "float4[]", "float4[]", None)
 
