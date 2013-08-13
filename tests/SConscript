@@ -26,6 +26,7 @@ test_alias = test_run_env.Alias('test', [], [File("examples_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("range_iter_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("error_tests.py").abspath])
 test_alias = test_run_env.Alias('test', [], [File("intrinsics_tests.py").abspath])
+test_alias = test_run_env.Alias('test', [], [File("test_syntax_ifstmt.py").abspath])
 test_run_env.Depends(test_alias, nanjit_lib)
 
 for app in typeinfo_app + argtypes_app + argalias_app:

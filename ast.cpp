@@ -939,8 +939,8 @@ ostream& ComparisonAST::print(ostream& os)
 
 Value *IfElseAST::codegen(ScopeContext *scope)
 {
-  IRBuilder<> *Builder = scope->Builder;
-  Function *TheFunction = Builder->GetInsertBlock()->getParent();
+  IRBuilder<> *builder = scope->Builder;
+  Function *parent_function = builder->GetInsertBlock()->getParent();
   
   Value *comparison = Comparison->codegen(scope);
 
@@ -950,19 +950,24 @@ Value *IfElseAST::codegen(ScopeContext *scope)
     }
   else
     {
-      BasicBlock *IfBB = BasicBlock::Create(getGlobalContext(), "if", TheFunction);
-      BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
-      Builder->CreateCondBr(comparison, IfBB, MergeBB);
+      BasicBlock *if_block = BasicBlock::Create(getGlobalContext(), "if", parent_function);
+      BasicBlock *merge_block = BasicBlock::Create(getGlobalContext(), "ifcont");
+      builder->CreateCondBr(comparison, if_block, merge_block);
       
-      Builder->SetInsertPoint(IfBB);
+      builder->SetInsertPoint(if_block);
       IfBlock->codegen(scope); /* FIXME: Create new scope */
       
-      /* Create a merge jump if the block doesn't cause a return */
-      if (!(isa<ReturnInst>(IfBB->back())))
-        Builder->CreateBr(MergeBB);
+      /* Use GetInsertBlock() here because IfBlock->codegen may change the active block */
+      BasicBlock *active_block = builder->GetInsertBlock();
+      if (active_block->empty() ||
+          !(isa<ReturnInst>(builder->GetInsertBlock()->back())))
+      {
+        /* Create a merge jump if the block doesn't cause a return */
+        builder->CreateBr(merge_block);
+      }
       
-      TheFunction->getBasicBlockList().push_back(MergeBB);
-      Builder->SetInsertPoint(MergeBB);
+      parent_function->getBasicBlockList().push_back(merge_block);
+      builder->SetInsertPoint(merge_block);
     }
   
   return NULL;
