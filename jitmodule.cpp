@@ -172,33 +172,69 @@ void JitModuleState::optimizeModule(Module *module)
 
 JitModuleState::~JitModuleState()
 {
-  if (execution_engine)
-    delete execution_engine;
-  if (target_machine)
-    delete target_machine;
 }
 
-JitModule::JitModule(const char *sourcecode, unsigned int module_flags)
-{
-  flags = module_flags;
-  module = new Module("nanJIT Dummy Module", getGlobalContext());
-  internal = new JitModuleState();
+class JitSingleton;
 
+static JitSingleton *jit_singleton = NULL;
+
+class JitSingleton
+{
+  public:
+    static JitSingleton *get(bool verbose = false);
+
+    ExecutionEngine *execution_engine;
+    TargetMachine *target_machine;
+    Module *dummy_module;
+
+    void removeModule(Module *module);
+
+  private:
+    JitSingleton(bool verbose);
+};
+
+JitSingleton *JitSingleton::get(bool verbose)
+{
+  if (!jit_singleton)
+    jit_singleton = new JitSingleton(verbose);
+  return jit_singleton;
+};
+
+JitSingleton::JitSingleton(bool verbose)
+{
   InitializeNativeTarget();
 
-  std::string errStr;
+  dummy_module = new Module("nanJIT Dummy Module", getGlobalContext());
 
-  EngineBuilder engine_builder(module);
-  internal->target_machine = engine_builder.selectTarget();
-  internal->execution_engine = engine_builder.setErrorStr(&errStr).create();
-  if (!internal->execution_engine) {
-    delete module;
+  std::string errStr;
+  EngineBuilder engine_builder(dummy_module);
+  target_machine = engine_builder.selectTarget();
+  execution_engine = engine_builder.setErrorStr(&errStr).create();
+
+  if (!execution_engine) {
     throw JitModuleException("Could not create ExecutionEngine: " + errStr);
   }
 
-  if (flags & JIT_MODULE_VERBOSE)
-    cout << "JIT Target:  " << internal->target_machine->getTargetTriple().str() << endl;
-  //cout << "stack align: " << internal->target_machine->getFrameLowering()->getStackAlignment() << endl;
+  if (verbose)
+    cout << "JIT Target: " << target_machine->getTargetTriple().str() << endl;
+};
+
+void JitSingleton::removeModule(Module *module)
+{
+  if (module != dummy_module)
+    execution_engine->removeModule(module);
+}
+
+JitModule::JitModule(const char *sourcecode, unsigned int  module_flags)
+{
+  flags = module_flags;
+  JitSingleton *singleton = JitSingleton::get(flags & JIT_MODULE_VERBOSE);
+
+  module = singleton->dummy_module;
+  internal = new JitModuleState();
+
+  internal->execution_engine = singleton->execution_engine;
+  internal->target_machine   = singleton->target_machine;
 
   /* Parse the source string */
   std::stringstream source_code_stream(sourcecode);
@@ -502,5 +538,18 @@ std::string JitModule::getLLVMCode()
 
 JitModule::~JitModule()
 {
+  JitSingleton *singleton = JitSingleton::get();
+
+  std::map<std::string, JitModuleIterationData>::iterator iter;
+
+  for(iter = liveFunctions.begin();
+      iter != liveFunctions.end();
+      ++iter)
+  {
+    singleton->removeModule(iter->second.module);
+  }
+
+  singleton->removeModule(module);
+
   delete internal;
 }
