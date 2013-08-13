@@ -154,44 +154,52 @@ Function *define_llvm_intrinisic(ScopeContext *scope, string name, TypeInfo type
 
 void ScopeContext::setVariable(std::string name, llvm::Value *value)
 {
+  /* Set an existing value in this contex's or a parent's scope */
   std::map<std::string, llvm::Value *>::iterator it;
-  it = Variables.find(name);
+  it = variables.find(name);
   
-  if (it == Variables.end())
+  if (it == variables.end())
     {
-      throw SyntaxErrorException("Assignment to undefined variable \"" + name + "\"");
+      if (parent)
+        parent->setVariable(name, value);
+      else
+        throw SyntaxErrorException("Assignment to undefined variable \"" + name + "\"");
     }
-  
-  Builder->CreateStore(value, Variables[name]);
+  else
+    {
+      Builder->CreateStore(value, it->second);
+    }
 }
 
 void ScopeContext::setVariable(TypeInfo type, std::string name, llvm::Value *value)
 {
+  /* When a type is given, create a new variable in this contex's scope */
   std::map<std::string, llvm::Value *>::iterator it;
-  it = Variables.find(name);
+  it = variables.find(name);
   
-  if (it == Variables.end())
+  if (it == variables.end())
     {
-      Function *TheFunction = Builder->GetInsertBlock()->getParent();
-      IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-      Variables[name] = TmpB.CreateAlloca(value->getType());
-      Types[name] = type;
+      Function *parent_function = Builder->GetInsertBlock()->getParent();
+      IRBuilder<> temp_builder(&parent_function->getEntryBlock(), parent_function->getEntryBlock().begin());
+      variables[name] = temp_builder.CreateAlloca(value->getType());
+      types[name] = type;
+      Builder->CreateStore(value, variables[name]);
     }
   else
     {
       throw SyntaxErrorException("Redefinition of variable \"" + name + "\"");
     }
-  
-  Builder->CreateStore(value, Variables[name]);
 }
 
 Value *ScopeContext::getVariable(std::string name)
 {
   std::map<std::string, llvm::Value *>::iterator it;
   
-  it = Variables.find(name);
-  if (it != Variables.end())
+  it = variables.find(name);
+  if (it != variables.end())
     return Builder->CreateLoad(it->second, name);
+  else if (parent)
+    return parent->getVariable(name);
     
   throw SyntaxErrorException ("Unknown variable: " + name);
 }
@@ -200,11 +208,23 @@ nanjit::TypeInfo ScopeContext::getTypeInfo(std::string name)
 {
   std::map<std::string, nanjit::TypeInfo>::iterator it;
   
-  it = Types.find(name);
-  if (it != Types.end())
+  it = types.find(name);
+  if (it != types.end())
     return it->second;
+  else if (parent)
+    return parent->getTypeInfo(name);
     
   throw SyntaxErrorException ("Unknown variable: " + name);
+}
+
+ScopeContext *ScopeContext::createChild()
+{
+  ScopeContext *scope = new ScopeContext();
+  scope->Builder = Builder;
+  scope->Module = Module;
+  scope->return_type = return_type;
+  scope->parent = this;
+  return scope;
 }
 
 ASTNode::ASTNode()
@@ -941,7 +961,7 @@ Value *IfElseAST::codegen(ScopeContext *scope)
 {
   IRBuilder<> *builder = scope->Builder;
   Function *parent_function = builder->GetInsertBlock()->getParent();
-  
+
   Value *comparison = Comparison->codegen(scope);
 
   if (ElseBlock.get())
@@ -953,10 +973,12 @@ Value *IfElseAST::codegen(ScopeContext *scope)
       BasicBlock *if_block = BasicBlock::Create(getGlobalContext(), "if", parent_function);
       BasicBlock *merge_block = BasicBlock::Create(getGlobalContext(), "ifcont");
       builder->CreateCondBr(comparison, if_block, merge_block);
-      
+
       builder->SetInsertPoint(if_block);
-      IfBlock->codegen(scope); /* FIXME: Create new scope */
-      
+
+      auto_ptr<ScopeContext> child_scope(scope->createChild());
+      IfBlock->codegen(child_scope.get());
+
       /* Use GetInsertBlock() here because IfBlock->codegen may change the active block */
       BasicBlock *active_block = builder->GetInsertBlock();
       if (active_block->empty() ||
@@ -965,11 +987,11 @@ Value *IfElseAST::codegen(ScopeContext *scope)
         /* Create a merge jump if the block doesn't cause a return */
         builder->CreateBr(merge_block);
       }
-      
+
       parent_function->getBasicBlockList().push_back(merge_block);
       builder->SetInsertPoint(merge_block);
     }
-  
+
   return NULL;
 }
 

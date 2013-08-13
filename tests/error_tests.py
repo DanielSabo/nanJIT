@@ -98,5 +98,18 @@ class ErrorTests(BaseNanjitTestErrorFunc):
 """
     self.doTest(shaderstr, "process")
 
+  def test_007_variable_out_of_scope(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  if (1.0f < 2.0f)
+    {
+      float4 out = in;
+    }
+  return out;
+}
+"""
+    self.doTest(shaderstr, "process")
+
 if __name__ == '__main__':
     unittest.main(verbosity=10)

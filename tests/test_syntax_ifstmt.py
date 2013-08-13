@@ -263,6 +263,61 @@ class Tests(BaseNanjitTestFloatFunc):
       [0.5, 0.5, 0.5, 0.5],
       [0.0, 0.0, 0.0, 0.0],
       [4.0, 0.0, 0.0, 0.0])
+  
+  def test_006_if_scope_A(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float a = 5;
+  if (in.s0 > 0.0f)
+    {
+      a = 6;
+    }
+  return (float4)(a, 0, 0, 0);
+}
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [6.0, 0.0, 0.0, 0.0])
+  
+  def test_007_if_scope_B(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float a = 5;
+  if (in.s0 > 0.0f)
+    {
+      float a = 6;
+    }
+  return (float4)(a, 0, 0, 0);
+}
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [5.0, 0.0, 0.0, 0.0])
+  
+  def test_008_if_scope_C(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float4 out = (float4)(0, 0, 0, 0);
+  if (in.s0 > 0.0f)
+    {
+      float a = 7;
+      out = (float4)(a, 0, 0, 0);
+    }
+  return out;
+}
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [7.0, 0.0, 0.0, 0.0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=10)
