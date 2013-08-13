@@ -205,7 +205,11 @@ static void load_referance_arguments(IRBuilder<> &builder,
           *loop_variables_iter = builder.CreateAlloca(base_type);
 
           /* Load the real value */
-          Value *value = builder.CreateLoad(ptr_value); /* FIXME: Check alignment */
+          Value *value = NULL;
+          if (args_iter->getAligned())
+            value = builder.CreateAlignedLoad(ptr_value, 16);
+          else
+            value = builder.CreateAlignedLoad(ptr_value, 1);
           builder.CreateAlignedStore(value, *loop_variables_iter, 16);
         }
 
