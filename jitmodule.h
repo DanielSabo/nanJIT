@@ -13,7 +13,8 @@ extern "C" {
   {
     JIT_MODULE_DEFAULT_FLAGS = 0x0,
     JIT_MODULE_DEBUG_AST  = 0x0100,
-    JIT_MODULE_DEBUG_LLVM = 0x0200
+    JIT_MODULE_DEBUG_LLVM = 0x0200,
+    JIT_MODULE_VERBOSE    = 0x0400
   } JitModuleFlags;
 
   JitModule *jit_module_for_src(const char *src, unsigned int module_flags);

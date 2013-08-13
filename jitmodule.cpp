@@ -196,7 +196,8 @@ JitModule::JitModule(const char *sourcecode, unsigned int module_flags)
     throw JitModuleException("Could not create ExecutionEngine: " + errStr);
   }
 
-  cout << "JIT Target:  " << internal->target_machine->getTargetTriple().str() << endl;
+  if (flags & JIT_MODULE_VERBOSE)
+    cout << "JIT Target:  " << internal->target_machine->getTargetTriple().str() << endl;
   //cout << "stack align: " << internal->target_machine->getFrameLowering()->getStackAlignment() << endl;
 
   /* Parse the source string */
@@ -280,7 +281,8 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
 
     if (liveFunctions.find(function_description.str()) != liveFunctions.end())
     {
-      cout << "Existing function for " << function_description.str() << endl;
+      if (flags & JIT_MODULE_VERBOSE)
+        cout << "Existing function for " << function_description.str() << endl;
       return liveFunctions[function_description.str()].compiledFunciton;
     }
   }
@@ -294,7 +296,8 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
 
   try
   {
-    cout << "Will generate " << function_description.str() << endl;
+    if (flags & JIT_MODULE_VERBOSE)
+      cout << "Will generate " << function_description.str() << endl;
 
     Function *iter_func = llvm_def_for(cloned_module, std::string(function_name), arginfos);
 
@@ -312,7 +315,8 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
     {
       MachineCodeInfo machine_code_info;
       internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
-      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      if (flags & JIT_MODULE_VERBOSE)
+        printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
       iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
     }
 
@@ -337,7 +341,8 @@ void *JitModule::getIteration(const char *function_name, const std::list<std::st
     {
       MachineCodeInfo machine_code_info;
       internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
-      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      if (flags & JIT_MODULE_VERBOSE)
+        printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
       iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
     }
 
@@ -397,7 +402,8 @@ void *JitModule::getRangeIteration(const char *function_name, const std::list<st
 
     if (liveFunctions.find(function_description.str()) != liveFunctions.end())
     {
-      cout << "Existing function for " << function_description.str() << endl;
+      if (flags & JIT_MODULE_VERBOSE)
+        cout << "Existing function for " << function_description.str() << endl;
       return liveFunctions[function_description.str()].compiledFunciton;
     }
   }
@@ -411,7 +417,8 @@ void *JitModule::getRangeIteration(const char *function_name, const std::list<st
 
   try
   {
-    cout << "Will generate " << function_description.str() << endl;
+    if (flags & JIT_MODULE_VERBOSE)
+      cout << "Will generate " << function_description.str() << endl;
 
     Function *iter_func = llvm_def_for_range(cloned_module, std::string(function_name), arginfos);
 
@@ -429,7 +436,8 @@ void *JitModule::getRangeIteration(const char *function_name, const std::list<st
     {
       MachineCodeInfo machine_code_info;
       internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
-      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      if (flags & JIT_MODULE_VERBOSE)
+        printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
       iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
     }
 
@@ -454,7 +462,8 @@ void *JitModule::getRangeIteration(const char *function_name, const std::list<st
     {
       MachineCodeInfo machine_code_info;
       internal->execution_engine->runJITOnFunction(iter_func, &machine_code_info);
-      printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
+      if (flags & JIT_MODULE_VERBOSE)
+        printf("jit result %lld bytes @ %p\n", (long long)machine_code_info.size(), machine_code_info.address());
       iter_data.compiledFunciton = internal->execution_engine->getPointerToFunction(iter_func);
     }
 

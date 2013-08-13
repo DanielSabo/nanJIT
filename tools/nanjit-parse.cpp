@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
   try
     {
-      jitmod.reset(new JitModule(sourcecode.c_str(), JIT_MODULE_DEBUG_AST | JIT_MODULE_DEBUG_LLVM));
+      jitmod.reset(new JitModule(sourcecode.c_str(), JIT_MODULE_DEBUG_AST | JIT_MODULE_DEBUG_LLVM | JIT_MODULE_VERBOSE));
     }
   catch (JitModuleException &e)
     {
