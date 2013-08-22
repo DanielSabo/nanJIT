@@ -186,6 +186,24 @@ static vector<Value*> load_arguments_to_variables(IRBuilder<> &builder, Function
   return loop_variables;
 }
 
+unsigned int get_arg_alignment(const GeneratorArgumentInfo &arg)
+{
+  if (!arg.getAligned())
+    return 1;
+
+  TypeInfo type_info = arg.getType();
+
+  if (!(type_info.getBaseType() == TypeInfo::TYPE_FLOAT ||
+        type_info.getBaseType() == TypeInfo::TYPE_INT   ||
+        type_info.getBaseType() == TypeInfo::TYPE_UINT))
+    return 1;
+
+  if (!(type_info.getWidth() == 4))
+    return 1;
+
+  return 16;
+}
+
 static void load_referance_arguments(IRBuilder<> &builder,
                                      vector<Value*> &loop_variables,
                                      const vector<GeneratorArgumentInfo> &target_arg_list)
@@ -205,11 +223,7 @@ static void load_referance_arguments(IRBuilder<> &builder,
           *loop_variables_iter = builder.CreateAlloca(base_type);
 
           /* Load the real value */
-          Value *value = NULL;
-          if (args_iter->getAligned())
-            value = builder.CreateAlignedLoad(ptr_value, 16);
-          else
-            value = builder.CreateAlignedLoad(ptr_value, 1);
+          Value *value = builder.CreateAlignedLoad(ptr_value, get_arg_alignment(*args_iter));
           builder.CreateAlignedStore(value, *loop_variables_iter, 16);
         }
 
@@ -308,11 +322,7 @@ static vector<Value*> pack_call_parameters(IRBuilder<> &builder,
         {
           /* If our argument is an array deref to the current value */
           call_parameter = builder.CreateLoad(call_parameter);
-
-          if (args_iter->arg_info.getAligned())
-            call_parameter = builder.CreateAlignedLoad(call_parameter, 16);
-          else
-            call_parameter = builder.CreateAlignedLoad(call_parameter, 1);
+          call_parameter = builder.CreateAlignedLoad(call_parameter, get_arg_alignment(args_iter->arg_info));
         }
       else
         {
@@ -401,10 +411,7 @@ llvm::Function *llvm_def_for(Module *module,
 
     Value *call_result = builder.CreateCall(target_func, call_parameters);
 
-    if (target_arg_list.begin()->getAligned())
-      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 16);
-    else
-      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 1);
+    builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), get_arg_alignment(*target_arg_list.begin()));
 
     increment_array_variables(builder, loop_variables, active_arg_list);
 
@@ -549,10 +556,7 @@ llvm::Function *llvm_def_for_range(Module *module,
 
     Value *call_result = builder.CreateCall(target_func, call_parameters);
 
-    if (target_arg_list.begin()->getAligned())
-      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 16);
-    else
-      builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), 1);
+    builder.CreateAlignedStore(call_result, builder.CreateLoad(return_location), get_arg_alignment(*target_arg_list.begin()));
 
     increment_array_variables(builder, loop_variables, active_arg_list);
 
