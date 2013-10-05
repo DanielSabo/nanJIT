@@ -319,5 +319,33 @@ class Tests(BaseNanjitTestFloatFunc):
       [0.0, 0.0, 0.0, 0.0],
       [7.0, 0.0, 0.0, 0.0])
 
+  def test_009_if_else(self):
+    shaderstr = \
+"""float4 process(float4 in, float4 aux)
+{
+  float4 out = (float4)(0, 0, 0, 0);
+  if (in.s0 > 0.0f)
+    {
+      out = (float4)(1, 1, 1, 1);
+    }
+  else
+    {
+      out = (float4)(2, 2, 2, 2);
+    }
+  return out;
+}
+"""
+    self.doTest(shaderstr,
+      "process",
+      [0.5, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [1.0, 1.0, 1.0, 1.0])
+
+    self.doTest(shaderstr,
+      "process",
+      [-0.5, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [2.0, 2.0, 2.0, 2.0])
+
 if __name__ == '__main__':
     unittest.main(verbosity=10)

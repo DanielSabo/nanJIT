@@ -966,12 +966,48 @@ Value *IfElseAST::codegen(ScopeContext *scope)
 
   if (ElseBlock.get())
     {
-      throw SyntaxErrorException("Else not implemented");
+      BasicBlock *if_block = BasicBlock::Create(builder->getContext(), "if", parent_function);
+      BasicBlock *else_block = BasicBlock::Create(builder->getContext(), "else", parent_function);
+      BasicBlock *merge_block = BasicBlock::Create(builder->getContext(), "ifcont");
+      BasicBlock *active_block = NULL;
+
+      builder->CreateCondBr(comparison, if_block, else_block);
+
+      builder->SetInsertPoint(if_block);
+
+      auto_ptr<ScopeContext> child_scope(scope->createChild());
+      IfBlock->codegen(child_scope.get());
+
+      /* Use GetInsertBlock() here because IfBlock->codegen may change the active block */
+      active_block = builder->GetInsertBlock();
+      if (active_block->empty() ||
+          !(isa<ReturnInst>(builder->GetInsertBlock()->back())))
+      {
+        /* Create a merge jump if the block doesn't cause a return */
+        builder->CreateBr(merge_block);
+      }
+
+      builder->SetInsertPoint(else_block);
+
+      child_scope.reset(scope->createChild());
+      ElseBlock->codegen(child_scope.get());
+
+      /* Use GetInsertBlock() here because ElseBlock->codegen may change the active block */
+      active_block = builder->GetInsertBlock();
+      if (active_block->empty() ||
+          !(isa<ReturnInst>(builder->GetInsertBlock()->back())))
+      {
+        /* Create a merge jump if the block doesn't cause a return */
+        builder->CreateBr(merge_block);
+      }
+
+      parent_function->getBasicBlockList().push_back(merge_block);
+      builder->SetInsertPoint(merge_block);
     }
   else
     {
-      BasicBlock *if_block = BasicBlock::Create(getGlobalContext(), "if", parent_function);
-      BasicBlock *merge_block = BasicBlock::Create(getGlobalContext(), "ifcont");
+      BasicBlock *if_block = BasicBlock::Create(builder->getContext(), "if", parent_function);
+      BasicBlock *merge_block = BasicBlock::Create(builder->getContext(), "ifcont");
       builder->CreateCondBr(comparison, if_block, merge_block);
 
       builder->SetInsertPoint(if_block);

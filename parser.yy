@@ -125,6 +125,7 @@ block:
 statement:
   expression SEMICOLON { $$ = $1; }
   | IF LPAREN comparison RPAREN LCURL block RCURL { $$ = new IfElseAST($3, $6, NULL); SETLOC($$, @$); }
+  | IF LPAREN comparison RPAREN LCURL block RCURL ELSE LCURL block RCURL { $$ = new IfElseAST($3, $6, $10); SETLOC($$, @$); }
   | RETURN SEMICOLON  { $$ = new ReturnAST(); SETLOC($$, @$); }
   | RETURN expression SEMICOLON { $$ = new ReturnAST($2); SETLOC($$, @$); }
 
